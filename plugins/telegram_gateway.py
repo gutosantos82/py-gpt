@@ -42,6 +42,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram.helpers import escape_markdown
 from PySide6.QtCore import QTimer, QObject, Signal
 
 log = logging.getLogger(__name__)
@@ -301,10 +302,11 @@ class Plugin(BasePlugin):
             reply_text = f"⚠️ Error while asking PyGPT: {e}"
 
         # Send back
+        reply_text = escape_markdown(reply_text or "(no response)", version=2)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=reply_text or "(no response)",
-            parse_mode=ParseMode.MARKDOWN,  # or omit if you prefer plain text
+            text=reply_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
             disable_web_page_preview=True,
         )
 
