@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.08 19:00:00                  #
+# Updated Date: 2025.08.09 19:00:00                  #
 # ================================================== #
 
 import os
@@ -497,15 +497,7 @@ class Body:
                 hideTips();
             }
             function sanitize(content) {
-                var parser = new DOMParser();
-                var doc = parser.parseFromString(content, "text/html");
-                var codeElements = doc.querySelectorAll('code, pre');
-                codeElements.forEach(function(element) {
-                    var html = element.outerHTML;
-                    var newHtml = html.replace(/&amp;lt;/g, '<').replace(/&amp;gt;/g, '>');
-                    element.outerHTML = newHtml;
-                });
-                return doc.documentElement.outerHTML;
+                return content.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;');
             }
             function highlightCode(withMath = true) {
                 document.querySelectorAll('pre code').forEach(el => {
@@ -711,7 +703,7 @@ class Body:
             function endStream() {
                 clearOutput();
             }
-            function appendStream(bot_name, content, chunk, replace = false, is_code_block = false) {
+            function appendStream(name_header, content, chunk, replace = false, is_code_block = false) {
                 hideTips();
                 const element = getStreamContainer();
                 doHighlight = true;
@@ -724,13 +716,13 @@ class Body:
                         box = document.createElement('div');
                         box.classList.add('msg-box');
                         box.classList.add('msg-bot');
-                        const name = document.createElement('div');
-                        name.classList.add('name-header');
-                        name.classList.add('name-bot');
-                        name.textContent = bot_name;
+                        if (name_header != '') {
+                            const name = document.createElement('div');
+                            name.innerHTML = name_header;
+                            box.appendChild(name);
+                        }
                         msg = document.createElement('div');
                         msg.classList.add('msg');
-                        box.appendChild(name);
                         box.appendChild(msg);
                         element.appendChild(box);
                     } else {
@@ -799,7 +791,7 @@ class Body:
                     scrollToBottom();
                 }    
             }
-            function replaceOutput(bot_name, content) {
+            function replaceOutput(name_header, content) {
                 hideTips();
                 const element = getStreamContainer();
                 if (element) {
@@ -809,13 +801,13 @@ class Body:
                         box = document.createElement('div');
                         box.classList.add('msg-box');
                         box.classList.add('msg-bot');
-                        const name = document.createElement('div');
-                        name.classList.add('name-header');
-                        name.classList.add('name-bot');
-                        name.textContent = bot_name;
+                        if (name_header != '') {
+                            const name = document.createElement('div');
+                            name.innerHTML = name_header;
+                            box.appendChild(name);
+                        }
                         msg = document.createElement('div');
                         msg.classList.add('msg');
-                        box.appendChild(name);
                         box.appendChild(msg);
                         element.appendChild(box);
                     } else {

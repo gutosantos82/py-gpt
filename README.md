@@ -2,7 +2,7 @@
 
 [![pygpt](https://snapcraft.io/pygpt/badge.svg)](https://snapcraft.io/pygpt)
 
-Release: **2.5.94** | build: **2025-08-09** | Python: **>=3.10, <3.14**
+Release: **2.5.95** | build: **2025-08-09** | Python: **>=3.10, <3.14**
 
 > Official website: https://pygpt.net | Documentation: https://pygpt.readthedocs.io
 > 
@@ -3320,6 +3320,12 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Voice control actions blacklist`: Disable actions in voice control; add actions to the blacklist to prevent execution through voice commands.
 
+**Personalize**
+
+- `About You`: Provide information about yourself, e.g., "My name is... I'm 30 years old, I'm interested in..." This will be included in the model's system prompt. **WARNING:** Please do not use AI as a "friend". Real-life friendship is better than using an AI as a friendship replacement. DO NOT become emotionally involved in interactions with an AI.
+
+- `Enable in Modes`: Select the modes where the personalized "about" prompt will be used.
+
 **Updates**
 
 - `Check for updates on start`: Enables checking for updates on start. Default: True.
@@ -4256,6 +4262,13 @@ may consume additional tokens that are not displayed in the main window.
 # CHANGELOG
 
 ## Recent changes:
+
+**2.5.95 (2025-08-09)**
+
+- Added user info personalization in Config -> Personalization, where you can provide information about yourself to the model.
+- Added presets personalization with configurable AI names and avatars.
+- Added a search field in the Translator tool.
+- Fixed <> tags replacement in code blocks.
 
 **2.5.94 (2025-08-09)**
 

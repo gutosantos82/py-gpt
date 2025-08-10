@@ -1,7 +1,7 @@
 {
   "__meta__": {
-    "version": "2.5.94",
-    "app.version": "2.5.94",
+    "version": "2.5.95",
+    "app.version": "2.5.95",
     "updated_at": "2025-08-09T00:00:00"
   },
   "access.audio.event.speech": false,
@@ -289,6 +289,8 @@
   "painter.brush.mode": "brush",
   "painter.brush.size": 3,
   "painter.canvas.size": "1280x720",
+  "personalize.about": "",
+  "personalize.modes": "chat",
   "plugins": {},
   "plugins_enabled": {
     "agent": false,
