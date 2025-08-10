@@ -42,6 +42,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from PySide6.QtCore import QTimer, QObject, Signal
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -57,6 +58,24 @@ class _BotState:
     stop_event: threading.Event = field(default_factory=threading.Event)
 
 
+class MainThreadInvoker(QObject):
+    """
+    Helper to marshal callables onto the Qt main thread via a queued signal.
+    """
+    invoke = Signal(object)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.invoke.connect(self._on_invoke)
+
+    def _on_invoke(self, fn):
+        try:
+            fn()
+        except Exception:
+            # The wrapper handles error propagation back to the waiting thread.
+            pass
+
+
 class Plugin(BasePlugin):
     """Telegram gateway plugin"""
 
@@ -69,6 +88,7 @@ class Plugin(BasePlugin):
         super().__init__(*args, **kwargs)
         self.state = _BotState()  # runtime TG state
         self.allowed_users = set()  # optional allowlist by Telegram user id
+        self._invoker = MainThreadInvoker(parent=self.window)
         # plugin options
         self.add_option(
             "bot_token",
@@ -160,6 +180,73 @@ class Plugin(BasePlugin):
         self._stop_bot()
         self._start_bot()
 
+    # ---------- Main-thread helpers ----------
+
+    def _call_on_main(self, fn):
+        """
+        Execute callable on the Qt main thread and return its result.
+        Blocks current thread until completion or timeout.
+        """
+        # If already on the main thread, execute directly
+        if threading.current_thread() is threading.main_thread():
+            return fn()
+
+        # If invoker is not available for any reason, fall back (may fail without event loop)
+        if not hasattr(self, "_invoker") or self._invoker is None:
+            done = threading.Event()
+            out = {}
+
+            def wrapper():
+                try:
+                    out["result"] = fn()
+                except Exception as e:
+                    out["error"] = e
+                finally:
+                    done.set()
+
+            QTimer.singleShot(0, wrapper)
+            if not done.wait(timeout=15.0):
+                raise RuntimeError("Main thread call timeout")
+            if "error" in out:
+                raise out["error"]
+            return out.get("result")
+
+        # Normal path: marshal via Qt signal to the main thread
+        done = threading.Event()
+        out = {}
+
+        def wrapper():
+            try:
+                out["result"] = fn()
+            except Exception as e:
+                out["error"] = e
+            finally:
+                done.set()
+
+        # Emit to main thread via queued connection
+        self._invoker.invoke.emit(wrapper)
+
+        # wait up to 15s for the call to complete
+        if not done.wait(timeout=15.0):
+            raise RuntimeError("Main thread call timeout")
+        if "error" in out:
+            raise out["error"]
+        return out.get("result")
+
+    def _dispatch_on_main(self, event):
+        """Dispatch PyGPT event on the main thread safely."""
+        try:
+            self._call_on_main(lambda: self.window.dispatch(event))
+        except Exception:
+            pass
+
+    def _text_send_on_main(self, text: str, internal: bool = True):
+        """
+        Call Text.send on the main thread and return ctx.
+        This avoids triggering UI render from a background thread.
+        """
+        return self._call_on_main(lambda: self.window.controller.chat.text.send(text, internal=internal))
+
     async def _tg_main(self, token: str):
         app = ApplicationBuilder().token(token).build()
 
@@ -192,6 +279,7 @@ class Plugin(BasePlugin):
         chat_id = update.effective_chat.id
         user_id = update.effective_user.id
         text = (update.message.text or "").strip()
+        log.info("[TelegramGateway] Received text: '%s' from user %s", text, user_id)
 
         if self.allowed_users and user_id not in self.allowed_users:
             await context.bot.send_message(
@@ -224,65 +312,36 @@ class Plugin(BasePlugin):
 
     async def _ask_pygpt(self, user_text: str) -> str:
         """
-        Core bridge: send `user_text` to PyGPT and return the assistant's reply.
-
-        Choose ONE of the adapter blocks below that matches your PyGPT version.
-        See 'Extending PyGPT' docs and the 'examples/example_plugin.py' in the repo
-        for the exact controller names in your build.
+        Bridge: send `user_text` to PyGPT and return the assistant's reply.
+        Uses the controller chat pipeline and waits until output is produced.
         """
-        # ========== ADAPTER A: Event-based injection ==========
-        # If your build exposes a public "ask" via a controller, use Adapter B.
-        # Otherwise, you can synthesize the same flow the UI does by:
-        #   1) Tell PyGPT “the user is sending text” (USER_SEND),
-        #   2) Then call the app's "send" method if available (often present).
+        # Best-effort: notify plugins that user sent text
         try:
-            data = {"value": user_text}
-            if hasattr(self.window, "events"):
-                self.window.events.dispatch(Event.USER_SEND, data=data, ctx=None)
-            # Some builds provide a high-level "send" or "ask" on a controller:
-            # e.g., self.window.controller.send()  OR  self.window.chat.ask()
-            if hasattr(self.window, "controller") and hasattr(self.window.controller, "send"):
-                # Synchronous call that returns final assistant text:
-                result = self.window.controller.send(user_text)
-                if isinstance(result, str):
-                    return result
-                # If result is a complex object, adapt as needed:
-                return getattr(result, "text", "") or str(result)
+            self._dispatch_on_main(Event(Event.USER_SEND, {'value': user_text}))
         except Exception:
             pass
 
-        # ========== ADAPTER B: Controller direct call ==========
-        # Many releases expose a chat/ask entry point on a controller or service.
-        # Search in your codebase for "def send(" or "def ask(" in controllers.
-        # Example patterns seen in plugins/examples:
-        #   self.window.chat.ask(user_text)
-        #   self.window.controller.chat.ask(user_text)
-        #   self.window.core.chat.ask(user_text)
-        for path in [
-            ("chat", "ask"),
-            ("controller", "ask"),
-            ("controller", "chat", "ask"),
-            ("core", "chat", "ask"),
-        ]:
-            try:
-                target = self.window
-                for p in path:
-                    target = getattr(target, p)
-                result = target(user_text)  # type: ignore
-                if isinstance(result, str):
-                    return result
-                return getattr(result, "text", "") or str(result)
-            except Exception:
-                continue
-
-        # ========== Fallback: read the latest model output from context ==========
-        # If neither path works, read last message from current context.
+        # Initiate the chat turn via the Text controller
         try:
-            if hasattr(self.window, "ctx") and hasattr(self.window.ctx, "last_output_text"):
-                return self.window.ctx.last_output_text()  # hypothetical helper
-        except Exception:
-            pass
+            loop = asyncio.get_running_loop()
+            ctx = await loop.run_in_executor(None, lambda: self._text_send_on_main(user_text, internal=True))
+        except Exception as e:
+            raise RuntimeError(f"Bridge call failed: {e}")
 
-        raise RuntimeError(
-            "Unable to bridge into PyGPT. Please wire Adapter A or B to your build."
-        )
+        # Poll for output (the pipeline is asynchronous)
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + 120.0  # seconds
+        last_nonempty = None
+        while loop.time() < deadline:
+            out = getattr(ctx, "final_output", None) or getattr(ctx, "output", None)
+            if out:
+                # Avoid returning a partial chunk if marked
+                if not getattr(ctx, "partial", False):
+                    return str(out)
+                last_nonempty = str(out)
+            await asyncio.sleep(0.25)
+
+        if last_nonempty:
+            return last_nonempty  # best-effort partial
+
+        raise RuntimeError("Timed out waiting for PyGPT reply")
