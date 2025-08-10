@@ -1,0 +1,10 @@
+{
+    "_version": "2.5.94",
+    "current": "ac44c67f-9896-4f47-94ca-172eef636232",
+    "profiles": {
+        "ac44c67f-9896-4f47-94ca-172eef636232": {
+            "name": "Default",
+            "workdir": "%HOME%/code/py-gpt/.pytest-workdir/pygpt-net"
+        }
+    }
+}
