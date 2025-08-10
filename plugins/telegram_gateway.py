@@ -296,26 +296,36 @@ class Plugin(BasePlugin):
         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
         try:
-            reply_text = await self._ask_pygpt(text)
+            texts, images = await self._ask_pygpt(text)
         except Exception as e:
             log.exception("PyGPT error")
-            reply_text = f"⚠️ Error while asking PyGPT: {e}"
+            texts, images = [f"⚠️ Error while asking PyGPT: {e}"], []
 
-        # Send back
-        reply_text = escape_markdown(reply_text or "(no response)", version=2)
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=reply_text,
-            parse_mode=ParseMode.MARKDOWN_V2,
-            disable_web_page_preview=True,
-        )
+        if not texts and images:
+            texts = ["image generated"]
+
+        for reply_text in texts or ["(no response)"]:
+            reply_text = escape_markdown(reply_text or "(no response)", version=2)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+
+        for img_path in images:
+            try:
+                with open(img_path, "rb") as fh:
+                    await context.bot.send_photo(chat_id=chat_id, photo=fh)
+            except Exception:
+                log.exception("Failed to send image %s", img_path)
 
     # ---------- Bridge into PyGPT ----------
 
-    async def _ask_pygpt(self, user_text: str) -> str:
+    async def _ask_pygpt(self, user_text: str) -> tuple[list[str], list[str]]:
         """
         Bridge: send `user_text` to PyGPT and return the assistant's reply.
-        Uses the controller chat pipeline and waits until output is produced.
+        Captures all text chunks and generated images, returning two lists.
         """
         # Best-effort: notify plugins that user sent text
         try:
@@ -330,20 +340,67 @@ class Plugin(BasePlugin):
         except Exception as e:
             raise RuntimeError(f"Bridge call failed: {e}")
 
-        # Poll for output (the pipeline is asynchronous)
+        texts: list[str] = []
+        images: list[str] = []
+        seen_res = 0
+        seen_img = 0
+
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
         last_nonempty = None
         while loop.time() < deadline:
-            out = getattr(ctx, "final_output", None) or getattr(ctx, "output", None)
-            if out:
-                # Avoid returning a partial chunk if marked
-                if not getattr(ctx, "partial", False):
-                    return str(out)
-                last_nonempty = str(out)
+            results = getattr(ctx, "results", []) or []
+            if results and len(results) > seen_res:
+                for res in results[seen_res:]:
+                    if isinstance(res, dict):
+                        chunk = (
+                            res.get("result")
+                            or res.get("response")
+                            or res.get("output")
+                        )
+                    else:
+                        chunk = res
+                    if chunk:
+                        chunk_str = str(chunk)
+                        texts.append(chunk_str)
+                        last_nonempty = chunk_str
+                seen_res = len(results)
+
+            img_list = getattr(ctx, "images", []) or []
+            if img_list and len(img_list) > seen_img:
+                images.extend(img_list[seen_img:])
+                seen_img = len(img_list)
+
+            if not getattr(ctx, "partial", False):
+                break
+
             await asyncio.sleep(0.25)
 
-        if last_nonempty:
-            return last_nonempty  # best-effort partial
+        # one last collection after loop
+        results = getattr(ctx, "results", []) or []
+        if results and len(results) > seen_res:
+            for res in results[seen_res:]:
+                if isinstance(res, dict):
+                    chunk = (
+                        res.get("result")
+                        or res.get("response")
+                        or res.get("output")
+                    )
+                else:
+                    chunk = res
+                if chunk:
+                    chunk_str = str(chunk)
+                    texts.append(chunk_str)
+                    last_nonempty = chunk_str
 
-        raise RuntimeError("Timed out waiting for PyGPT reply")
+        img_list = getattr(ctx, "images", []) or []
+        if img_list and len(img_list) > seen_img:
+            images.extend(img_list[seen_img:])
+
+        if not texts and last_nonempty:
+            texts.append(last_nonempty)
+
+        if not texts and not images:
+            raise RuntimeError("Timed out waiting for PyGPT reply")
+
+        return texts, images
