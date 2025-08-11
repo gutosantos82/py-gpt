@@ -340,65 +340,17 @@ class Plugin(BasePlugin):
         except Exception as e:
             raise RuntimeError(f"Bridge call failed: {e}")
 
-        texts: list[str] = []
-        images: list[str] = []
-        seen_res = 0
-        seen_img = 0
-
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
-        last_nonempty = None
         while loop.time() < deadline:
-            results = getattr(ctx, "results", []) or []
-            if results and len(results) > seen_res:
-                for res in results[seen_res:]:
-                    if isinstance(res, dict):
-                        chunk = (
-                            res.get("result")
-                            or res.get("response")
-                            or res.get("output")
-                        )
-                    else:
-                        chunk = res
-                    if chunk:
-                        chunk_str = str(chunk)
-                        texts.append(chunk_str)
-                        last_nonempty = chunk_str
-                seen_res = len(results)
-
-            img_list = getattr(ctx, "images", []) or []
-            if img_list and len(img_list) > seen_img:
-                images.extend(img_list[seen_img:])
-                seen_img = len(img_list)
-
-            if not getattr(ctx, "partial", False):
+            output_ready = getattr(ctx, "output", None)
+            images_ready = getattr(ctx, "images", []) or []
+            if output_ready or images_ready:
                 break
-
             await asyncio.sleep(0.25)
 
-        # one last collection after loop
-        results = getattr(ctx, "results", []) or []
-        if results and len(results) > seen_res:
-            for res in results[seen_res:]:
-                if isinstance(res, dict):
-                    chunk = (
-                        res.get("result")
-                        or res.get("response")
-                        or res.get("output")
-                    )
-                else:
-                    chunk = res
-                if chunk:
-                    chunk_str = str(chunk)
-                    texts.append(chunk_str)
-                    last_nonempty = chunk_str
-
-        img_list = getattr(ctx, "images", []) or []
-        if img_list and len(img_list) > seen_img:
-            images.extend(img_list[seen_img:])
-
-        if not texts and last_nonempty:
-            texts.append(last_nonempty)
+        texts = [str(getattr(ctx, "output", ""))] if getattr(ctx, "output", None) else []
+        images = list(getattr(ctx, "images", []) or [])
 
         if not texts and not images:
             raise RuntimeError("Timed out waiting for PyGPT reply")
