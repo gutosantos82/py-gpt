@@ -90,6 +90,43 @@ def test_ask_pygpt_monitors_sub_reply(mock_window):
     assert images == ["img.png"]
 
 
+def test_ask_pygpt_monitors_extra_sub_reply(mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    initial = CtxItem()
+    initial.output = None
+    initial.results = []
+    initial.images = []
+
+    sub = CtxItem()
+    sub.output = "here"
+    sub.results = []
+    sub.images = ["img.png"]
+    sub.extra["sub_reply"] = True
+
+    plugin._text_send_on_main = MagicMock(return_value=initial)
+
+    call = {"n": 0}
+
+    def get_last_item():
+        call["n"] += 1
+        return sub if call["n"] > 1 else initial
+
+    mock_window.core.ctx.get_last_item = get_last_item
+
+    async def run():
+        with patch("plugins.telegram_gateway.asyncio.sleep", new=AsyncMock()):
+            agen = plugin._ask_pygpt("test")
+            texts, images = await asyncio.wait_for(anext(agen), timeout=1)
+            await agen.aclose()
+            return texts, images
+
+    texts, images = asyncio.run(run())
+    assert texts == ["here"]
+    assert images == ["img.png"]
+
+
 @patch("plugins.telegram_gateway.os.path.exists", return_value=True)
 @patch("plugins.telegram_gateway.open", new_callable=mock_open, read_data=b"data")
 def test_on_text_forwards_tool_reply(mock_open_fn, mock_exists, mock_window):

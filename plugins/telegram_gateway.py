@@ -400,7 +400,13 @@ class Plugin(BasePlugin):
             if (
                 last_ctx is not None
                 and last_ctx is not curr_ctx
-                and getattr(last_ctx, "sub_reply", False)
+                and (
+                    getattr(last_ctx, "sub_reply", False)
+                    or (
+                        isinstance(getattr(last_ctx, "extra", None), dict)
+                        and last_ctx.extra.get("sub_reply")
+                    )
+                )
             ):
                 curr_ctx = last_ctx
                 prev_output = None
