@@ -28,7 +28,7 @@ import asyncio
 import logging
 import threading
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, AsyncIterator
 
 from pygpt_net.core.events import Event  # event enum (docs list the names)
 from pygpt_net.plugin.base.plugin import BasePlugin
@@ -295,17 +295,46 @@ class Plugin(BasePlugin):
         # Inform user we’re working
         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
+        sent_any = False
         try:
-            texts, images = await self._ask_pygpt(text)
+            async for texts, images in self._ask_pygpt(text):
+                if not texts and images and not sent_any:
+                    placeholder = escape_markdown("image generated", version=2)
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=placeholder,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        disable_web_page_preview=True,
+                    )
+                for reply_text in texts:
+                    sent_any = True
+                    reply_text = escape_markdown(reply_text or "(no response)", version=2)
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=reply_text,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        disable_web_page_preview=True,
+                    )
+                for img_path in images:
+                    sent_any = True
+                    try:
+                        with open(img_path, "rb") as fh:
+                            await context.bot.send_photo(chat_id=chat_id, photo=fh)
+                    except Exception:
+                        log.exception("Failed to send image %s", img_path)
         except Exception as e:
             log.exception("PyGPT error")
-            texts, images = [f"⚠️ Error while asking PyGPT: {e}"], []
+            reply_text = escape_markdown(f"⚠️ Error while asking PyGPT: {e}", version=2)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
 
-        if not texts and images:
-            texts = ["image generated"]
-
-        for reply_text in texts or ["(no response)"]:
-            reply_text = escape_markdown(reply_text or "(no response)", version=2)
+        if not sent_any:
+            reply_text = escape_markdown("(no response)", version=2)
             await context.bot.send_message(
                 chat_id=chat_id,
                 text=reply_text,
@@ -313,19 +342,12 @@ class Plugin(BasePlugin):
                 disable_web_page_preview=True,
             )
 
-        for img_path in images:
-            try:
-                with open(img_path, "rb") as fh:
-                    await context.bot.send_photo(chat_id=chat_id, photo=fh)
-            except Exception:
-                log.exception("Failed to send image %s", img_path)
-
     # ---------- Bridge into PyGPT ----------
 
-    async def _ask_pygpt(self, user_text: str) -> tuple[list[str], list[str]]:
+    async def _ask_pygpt(self, user_text: str) -> AsyncIterator[tuple[list[str], list[str]]]:
         """
-        Bridge: send `user_text` to PyGPT and return the assistant's reply.
-        Captures all text chunks and generated images, returning two lists.
+        Bridge: send `user_text` to PyGPT and stream the assistant's replies.
+        Yields lists of new text chunks and generated images as they appear.
         """
         # Best-effort: notify plugins that user sent text
         try:
@@ -336,23 +358,56 @@ class Plugin(BasePlugin):
         # Initiate the chat turn via the Text controller
         try:
             loop = asyncio.get_running_loop()
-            ctx = await loop.run_in_executor(None, lambda: self._text_send_on_main(user_text, internal=True))
+            ctx = await loop.run_in_executor(
+                None, lambda: self._text_send_on_main(user_text, internal=True)
+            )
         except Exception as e:
             raise RuntimeError(f"Bridge call failed: {e}")
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
+        idle_window = 10.0
+
+        last_seen = loop.time()
+        got_any = False
+        prev_output = getattr(ctx, "output", None)
+        prev_results_len = len(getattr(ctx, "results", []) or [])
+        prev_images_len = len(getattr(ctx, "images", []) or [])
+
         while loop.time() < deadline:
-            output_ready = getattr(ctx, "output", None)
-            images_ready = getattr(ctx, "images", []) or []
-            if output_ready or images_ready:
+            curr_output = getattr(ctx, "output", None)
+            curr_results = getattr(ctx, "results", []) or []
+            curr_images = getattr(ctx, "images", []) or []
+
+            new_texts: list[str] = []
+            new_images: list[str] = []
+
+            if curr_output != prev_output and curr_output is not None:
+                new_texts.append(str(curr_output))
+                prev_output = curr_output
+
+            if len(curr_results) > prev_results_len:
+                for item in curr_results[prev_results_len:]:
+                    if isinstance(item, dict):
+                        value = item.get("result")
+                        new_texts.append(str(value) if value is not None else str(item))
+                    else:
+                        new_texts.append(str(item))
+                prev_results_len = len(curr_results)
+
+            if len(curr_images) > prev_images_len:
+                new_images = list(curr_images[prev_images_len:])
+                prev_images_len = len(curr_images)
+
+            if new_texts or new_images:
+                last_seen = loop.time()
+                got_any = True
+                yield new_texts, new_images
+
+            if got_any and (loop.time() - last_seen) > idle_window:
                 break
+
             await asyncio.sleep(0.25)
 
-        texts = [str(getattr(ctx, "output", ""))] if getattr(ctx, "output", None) else []
-        images = list(getattr(ctx, "images", []) or [])
-
-        if not texts and not images:
+        if not got_any:
             raise RuntimeError("Timed out waiting for PyGPT reply")
-
-        return texts, images
