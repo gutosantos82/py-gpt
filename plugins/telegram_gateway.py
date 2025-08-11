@@ -27,6 +27,7 @@ options shown match the docs pattern; pick whichever matches your build.
 import asyncio
 import logging
 import threading
+import os
 from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator
 
@@ -318,6 +319,9 @@ class Plugin(BasePlugin):
                 for img_path in images:
                     sent_any = True
                     try:
+                        img_path = self.window.core.filesystem.to_workdir(img_path)
+                        if not os.path.exists(img_path):
+                            raise FileNotFoundError(f"Missing image: {img_path}")
                         with open(img_path, "rb") as fh:
                             await context.bot.send_photo(chat_id=chat_id, photo=fh)
                     except Exception:
@@ -366,7 +370,7 @@ class Plugin(BasePlugin):
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
-        idle_window = 10.0
+        idle_window = 60.0
 
         last_seen = loop.time()
         got_any = False
