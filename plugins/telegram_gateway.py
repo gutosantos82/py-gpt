@@ -83,13 +83,12 @@ class MainThreadInvoker(QObject):
 class Plugin(BasePlugin):
     """Telegram gateway plugin"""
 
-    id = "telegram_gateway"
-    name = "Telegram Gateway"
-    version = "1.0.0"
-    description = "Receive text from Telegram and reply using PyGPT."
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.id = "telegram_gateway"
+        self.name = "Telegram Gateway"
+        self.version = "1.0.0"
+        self.description = "Receive text from Telegram and reply using PyGPT."
         self.state = _BotState()  # runtime TG state
         self.allowed_users = set()  # optional allowlist by Telegram user id
         self._invoker = MainThreadInvoker(parent=self.window)
