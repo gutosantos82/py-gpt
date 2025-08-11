@@ -105,18 +105,29 @@ class Config:
 
         :return: base workdir path
         """
-        path = os.path.join(Path.home(), '.config', Config.CONFIG_DIR)
+        # 1) Explicit override via env takes precedence
         if "PYGPT_WORKDIR" in os.environ and os.environ["PYGPT_WORKDIR"] != "":
-            print("FORCE using workdir: {}".format(os.environ["PYGPT_WORKDIR"]))
+            workdir = os.environ["PYGPT_WORKDIR"]
+            print("FORCE using workdir: {}".format(workdir))
             # convert relative path to absolute path if needed
-            if not os.path.isabs(os.environ["PYGPT_WORKDIR"]):
-                path = os.path.join(os.getcwd(), os.environ["PYGPT_WORKDIR"])
+            if not os.path.isabs(workdir):
+                path = os.path.join(os.getcwd(), workdir)
             else:
-                path = os.environ["PYGPT_WORKDIR"]
+                path = workdir
             if not os.path.exists(path):
                 print("Workdir path not exists: {}".format(path))
                 print("Creating workdir path: {}".format(path))
                 os.makedirs(path, exist_ok=True)
+            return path
+
+        # 2) Test environment: use project-local workdir to avoid touching user home
+        if os.environ.get('ENV_TEST') == '1':
+            path = os.path.join(os.getcwd(), '.pytest-workdir', Config.CONFIG_DIR)
+            os.makedirs(path, exist_ok=True)
+            return path
+
+        # 3) Default location in user's config dir
+        path = os.path.join(Path.home(), '.config', Config.CONFIG_DIR)
         return path
 
     @staticmethod
@@ -128,22 +139,31 @@ class Config:
         """
         is_test = os.environ.get('ENV_TEST') == '1'
         path = Path(Config.get_base_workdir())
-        if not path.exists() and not is_test:  # DISABLE in tests!!!
+
+        # Ensure the base workdir exists in all environments (test and non-test)
+        if not path.exists():
             path.mkdir(parents=True, exist_ok=True)
-        path_file = "path.cfg"
-        p = os.path.join(str(path), path_file)
-        if not os.path.exists(p) and not is_test:  # DISABLE in tests!!!
+
+        p = os.path.join(str(path), "path.cfg")
+
+        if os.path.exists(p):
+            # Only try to read if file exists
+            try:
+                with open(p, 'r', encoding='utf-8') as f:
+                    tmp_path = f.read().strip()
+                if tmp_path:
+                    tmp_path = tmp_path.replace("%HOME%", str(Path.home()))
+                    if os.path.exists(tmp_path):
+                        path = Path(tmp_path)
+                    else:
+                        print("CRITICAL: Workdir path not exists: {}".format(tmp_path))
+            except Exception as e:
+                print(f"Warning reading workdir file: {e}")
+        else:
+            # Create an empty path.cfg to allow user override later (also in tests)
             with open(p, 'w', encoding='utf-8') as f:
                 f.write("")
-        else:
-            with open(p, 'r', encoding='utf-8') as f:
-                tmp_path = f.read().strip()
-            if tmp_path:
-                tmp_path = tmp_path.replace("%HOME%", str(Path.home()))
-                if os.path.exists(tmp_path):
-                    path = Path(tmp_path)
-                else:
-                    print("CRITICAL: Workdir path not exists: {}".format(tmp_path))
+
         return str(path)
 
     def set_workdir(self, path: str, reload: bool = False):

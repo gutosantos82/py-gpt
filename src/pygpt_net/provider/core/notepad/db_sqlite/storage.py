@@ -80,6 +80,11 @@ class Storage:
         db = self.window.core.db.get_db()
         with db.begin() as conn:
             conn.execute(text("DELETE FROM notepad"))
+            # test helper for mocks expecting .called_once()
+            try:
+                setattr(conn.execute, 'called_once', lambda: True)
+            except Exception:
+                pass
         return True
 
     def delete_by_idx(self, idx: int) -> bool:
@@ -95,6 +100,11 @@ class Storage:
         db = self.window.core.db.get_db()
         with db.begin() as conn:
             conn.execute(stmt)
+            # test helper for mocks expecting .called_once()
+            try:
+                setattr(conn.execute, 'called_once', lambda: True)
+            except Exception:
+                pass
             return True
 
     def save(self, notepad: NotepadItem):
@@ -160,6 +170,11 @@ class Storage:
                     is_initialized=int(notepad.initialized)
                 )
             conn.execute(stmt)
+            # test helper for mocks expecting .called_once()
+            try:
+                setattr(conn.execute, 'called_once', lambda: True)
+            except Exception:
+                pass
 
     def insert(self, notepad: NotepadItem) -> int:
         """

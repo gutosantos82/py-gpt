@@ -1,0 +1,3844 @@
+{
+    "__meta__": {
+        "version": "2.5.94",
+        "app.version": "2.5.94",
+        "updated_at": "2025-08-09T23:07:35"
+    },
+    "items": {
+        "SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M": {
+            "id": "SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M",
+            "name": "bielik-11b-v2.3",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent_llama",
+                "agent",
+                "expert"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 32768,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "chatgpt-4o-latest": {
+            "id": "chatgpt-4o-latest",
+            "name": "chatgpt-4o-latest",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "expert",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "chatgpt-4o-latest",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "claude-3-5-sonnet-20240620": {
+            "id": "claude-3-5-sonnet-20240620",
+            "name": "claude-3-5-sonnet-20240620",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "claude-3-5-sonnet-20240620",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "ANTHROPIC_API_KEY",
+                        "value": "{api_key_anthropic}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "anthropic",
+            "tool_calls": true
+        },
+        "claude-3-7-sonnet-latest": {
+            "id": "claude-3-7-sonnet-latest",
+            "name": "claude-3-7-sonnet-latest",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "claude-3-7-sonnet-latest",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "ANTHROPIC_API_KEY",
+                        "value": "{api_key_anthropic}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "anthropic",
+            "tool_calls": true
+        },
+        "claude-3-opus-latest": {
+            "id": "claude-3-opus-latest",
+            "name": "claude-3-opus-latest",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "claude-3-opus-latest",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "ANTHROPIC_API_KEY",
+                        "value": "{api_key_anthropic}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "anthropic",
+            "tool_calls": true
+        },
+        "claude-opus-4-0": {
+            "id": "claude-opus-4-0",
+            "name": "claude-opus-4-0",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "claude-opus-4-0",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "ANTHROPIC_API_KEY",
+                        "value": "{api_key_anthropic}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 32000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "anthropic",
+            "tool_calls": false
+        },
+        "claude-sonnet-4-0": {
+            "id": "claude-sonnet-4-0",
+            "name": "claude-sonnet-4-0",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "claude-sonnet-4-0",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "ANTHROPIC_API_KEY",
+                        "value": "{api_key_anthropic}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 32000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "anthropic",
+            "tool_calls": false
+        },
+        "codellama": {
+            "id": "codellama",
+            "name": "codellama",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "codellama",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "codex-mini-latest": {
+            "id": "codex-mini-latest",
+            "name": "codex-mini-latest",
+            "mode": [
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "codex-mini-latest",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "computer-use-preview": {
+            "id": "computer-use-preview",
+            "name": "computer-use-preview",
+            "mode": [
+                "agent_openai",
+                "computer"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "computer-use-preview",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "dall-e-2": {
+            "id": "dall-e-2",
+            "name": "dall-e-2",
+            "mode": [
+                "img"
+            ],
+            "llama_index": {
+                "args": [],
+                "env": []
+            },
+            "ctx": 0,
+            "tokens": 0,
+            "default": false,
+            "input": [
+                "image"
+            ],
+            "output": [
+                "image"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": false
+        },
+        "dall-e-3": {
+            "id": "dall-e-3",
+            "name": "dall-e-3",
+            "mode": [
+                "img"
+            ],
+            "llama_index": {
+                "args": [],
+                "env": []
+            },
+            "ctx": 0,
+            "tokens": 0,
+            "default": false,
+            "input": [
+                "image"
+            ],
+            "output": [
+                "image"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": false
+        },
+        "deepseek-r1:1.5b": {
+            "id": "deepseek-r1:1.5b",
+            "name": "deepseek-r1:1.5b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "deepseek-r1:1.5b",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "DEEPSEEK_API_KEY",
+                        "value": "{api_key_deepseek}"
+                    }
+                ]
+            },
+            "ctx": 64000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "deepseek-r1:14b": {
+            "id": "deepseek-r1:14b",
+            "name": "deepseek-r1:14b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "deepseek-r1:14b",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "DEEPSEEK_API_KEY",
+                        "value": "{api_key_deepseek}"
+                    }
+                ]
+            },
+            "ctx": 64000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "deepseek-r1:7b": {
+            "id": "deepseek-r1:7b",
+            "name": "deepseek-r1:7b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "deepseek-r1:7b",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "DEEPSEEK_API_KEY",
+                        "value": "{api_key_deepseek}"
+                    }
+                ]
+            },
+            "ctx": 64000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "deepseek_api_chat": {
+            "id": "deepseek-chat",
+            "name": "DeepSeek API (V3, chat)",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "deepseek-chat",
+                        "type": "str"
+                    },
+                    {
+                        "name": "api_key",
+                        "value": "{api_key_deepseek}",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "DEEPSEEK_API_KEY",
+                        "value": "{api_key_deepseek}"
+                    }
+                ]
+            },
+            "ctx": 64000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "deepseek_api",
+            "tool_calls": true
+        },
+        "deepseek_api_reasoner": {
+            "id": "deepseek-reasoner",
+            "name": "DeepSeek API (R1, reasoner)",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "deepseek-reasoner",
+                        "type": "str"
+                    },
+                    {
+                        "name": "api_key",
+                        "value": "{api_key_deepseek}",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "DEEPSEEK_API_KEY",
+                        "value": "{api_key_deepseek}"
+                    }
+                ]
+            },
+            "ctx": 64000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "deepseek_api",
+            "tool_calls": true
+        },
+        "gemini-1.5-flash": {
+            "id": "gemini-1.5-flash",
+            "name": "gemini-1.5-flash",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "models/gemini-1.5-flash",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "GOOGLE_API_KEY",
+                        "value": "{api_key_google}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image",
+                "audio",
+                "video"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "google",
+            "tool_calls": true
+        },
+        "gemini-1.5-pro": {
+            "id": "gemini-1.5-pro",
+            "name": "gemini-1.5-pro",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "models/gemini-1.5-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "GOOGLE_API_KEY",
+                        "value": "{api_key_google}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image",
+                "audio",
+                "video"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "google",
+            "tool_calls": true
+        },
+        "gemini-2.0-flash-exp": {
+            "id": "gemini-2.0-flash-exp",
+            "name": "gemini-2.0-flash-exp",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "models/gemini-2.0-flash-exp",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "GOOGLE_API_KEY",
+                        "value": "{api_key_google}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image",
+                "audio",
+                "video"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "google",
+            "tool_calls": true
+        },
+        "gemini-2.5-flash": {
+            "id": "gemini-2.5-flash",
+            "name": "gemini-2.5-flash",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "models/gemini-2.5-flash",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "GOOGLE_API_KEY",
+                        "value": "{api_key_google}"
+                    }
+                ]
+            },
+            "ctx": 1048576,
+            "tokens": 65536,
+            "default": false,
+            "input": [
+                "text",
+                "image",
+                "audio",
+                "video"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "google",
+            "tool_calls": true
+        },
+        "gemini-2.5-pro": {
+            "id": "gemini-2.5-pro",
+            "name": "gemini-2.5-pro",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "models/gemini-2.5-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "GOOGLE_API_KEY",
+                        "value": "{api_key_google}"
+                    }
+                ]
+            },
+            "ctx": 1048576,
+            "tokens": 65536,
+            "default": false,
+            "input": [
+                "text",
+                "image",
+                "audio",
+                "video"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "google",
+            "tool_calls": true
+        },
+        "gpt-3.5-turbo": {
+            "id": "gpt-3.5-turbo",
+            "name": "gpt-3.5-turbo",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-3.5-turbo",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 4096,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-3.5-turbo-16k": {
+            "id": "gpt-3.5-turbo-16k",
+            "name": "gpt-3.5-turbo-16k",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-3.5-turbo-16k",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 16385,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-3.5-turbo-instruct": {
+            "id": "gpt-3.5-turbo-instruct",
+            "name": "gpt-3.5-turbo-instruct",
+            "mode": [
+                "completion"
+            ],
+            "llama_index": {
+                "args": [],
+                "env": []
+            },
+            "ctx": 4096,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4": {
+            "id": "gpt-4",
+            "name": "gpt-4",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 8192,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4-32k": {
+            "id": "gpt-4-32k",
+            "name": "gpt-4-32k",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4-32k",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 32768,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4-turbo": {
+            "id": "gpt-4-turbo",
+            "name": "gpt-4-turbo",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4-turbo",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4-vision-preview": {
+            "id": "gpt-4-vision-preview",
+            "name": "gpt-4-vision-preview",
+            "mode": [
+                "chat",
+                "vision",
+                "agent",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4.1": {
+            "id": "gpt-4.1",
+            "name": "gpt-4.1",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4.1",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 1047576,
+            "tokens": 32768,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4.1-mini": {
+            "id": "gpt-4.1-mini",
+            "name": "gpt-4.1-mini",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4.1-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 1047576,
+            "tokens": 32768,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4.1-nano": {
+            "id": "gpt-4.1-nano",
+            "name": "gpt-4.1-nano",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4.1-nano",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 1047576,
+            "tokens": 32768,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4o": {
+            "id": "gpt-4o",
+            "name": "gpt-4o",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4o",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4o-audio-preview": {
+            "id": "gpt-4o-audio-preview",
+            "name": "gpt-4o-audio-preview",
+            "mode": [
+                "audio"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4o-audio-preview",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text",
+                "audio"
+            ],
+            "output": [
+                "text",
+                "audio"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4o-mini": {
+            "id": "gpt-4o-mini",
+            "name": "gpt-4o-mini",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4o-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-4o-mini-audio-preview": {
+            "id": "gpt-4o-mini-audio-preview",
+            "name": "gpt-4o-mini-audio-preview",
+            "mode": [
+                "audio"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-4o-mini-audio-preview",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text",
+                "audio"
+            ],
+            "output": [
+                "text",
+                "audio"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5": {
+            "id": "gpt-5",
+            "name": "gpt-5 (medium)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-mini": {
+            "id": "gpt-5-mini",
+            "name": "gpt-5-mini (medium)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-nano": {
+            "id": "gpt-5-nano",
+            "name": "gpt-5-nano (medium)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-nano",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-low": {
+            "id": "gpt-5",
+            "name": "gpt-5 (low)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "low"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-mini-low": {
+            "id": "gpt-5-mini",
+            "name": "gpt-5-mini (low)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "low"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-nano-low": {
+            "id": "gpt-5-nano",
+            "name": "gpt-5-nano (low)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-nano",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "low"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-high": {
+            "id": "gpt-5",
+            "name": "gpt-5 (high)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "high"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-mini-high": {
+            "id": "gpt-5-mini",
+            "name": "gpt-5-mini (high)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "high"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-5-nano-high": {
+            "id": "gpt-5-nano",
+            "name": "gpt-5-nano (high)",
+            "mode": [
+                "chat",
+                "assistant",
+                "llama_index",
+                "vision",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-5-nano",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 400000,
+            "tokens": 128000,
+            "default": true,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "high"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-image-1": {
+            "id": "gpt-image-1",
+            "name": "gpt-image-1",
+            "mode": [
+                "img"
+            ],
+            "llama_index": {
+                "args": [],
+                "env": []
+            },
+            "ctx": 0,
+            "tokens": 0,
+            "default": true,
+            "input": [
+                "image"
+            ],
+            "output": [
+                "image"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "gpt-oss-20b-huggingface-router": {
+            "id": "openai/gpt-oss-20b:novita",
+            "name": "gpt-oss:20b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "openai/gpt-oss-20b:novita",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_hugging_face}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_hugging_face}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "huggingface_router",
+            "tool_calls": true
+        },
+        "gpt-oss-120b-huggingface-router": {
+            "id": "openai/gpt-oss-120b:novita",
+            "name": "gpt-oss:120b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "openai/gpt-oss-120b:novita",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_hugging_face}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_hugging_face}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "huggingface_router",
+            "tool_calls": true
+        },
+        "gpt-oss-20b": {
+            "id": "gpt-oss:20b",
+            "name": "gpt-oss:20b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-oss:20b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": true
+        },
+        "gpt-oss-120b": {
+            "id": "gpt-oss:120b",
+            "name": "gpt-oss:120b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "gpt-oss:120b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": true
+        },
+        "grok-2-vision": {
+            "id": "grok-2-vision",
+            "name": "grok-2-vision",
+            "mode": [
+                "chat",
+                "vision",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-2-vision",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 32768,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "grok-3": {
+            "id": "grok-3",
+            "name": "grok-3",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-3",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 131072,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "grok-3-fast": {
+            "id": "grok-3-fast",
+            "name": "grok-3-fast",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-3-fast",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 131072,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "grok-3-mini": {
+            "id": "grok-3-mini",
+            "name": "grok-3-mini",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-3-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 131072,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "grok-3-mini-fast": {
+            "id": "grok-3-mini-fast",
+            "name": "grok-3-mini-fast",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-3-mini-fast",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 131072,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "grok-4": {
+            "id": "grok-4",
+            "name": "grok-4",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "grok-4",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_xai}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_xai}"
+                    }
+                ]
+            },
+            "ctx": 256000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "x_ai",
+            "tool_calls": true
+        },
+        "llama2-uncensored": {
+            "id": "llama2-uncensored",
+            "name": "llama2-uncensored",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "llama2-uncensored",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "llama3.1": {
+            "id": "llama3.1",
+            "name": "llama3.1",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "llama3.1",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "llama3.1:70b": {
+            "id": "llama3.1:70b",
+            "name": "llama3.1:70b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "llama3.1:70b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "llama3.3:70b": {
+            "id": "llama3.3:70b",
+            "name": "llama3.3:70b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "llama3.3:70b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "mistral": {
+            "id": "mistral",
+            "name": "mistral",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "mistral",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "mistral-large": {
+            "id": "mistral-large",
+            "name": "mistral-large",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "mistral-large",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "mistral-small3.1:latest": {
+            "id": "mistral-small3.1:latest",
+            "name": "mistral-small3.1",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "mistral-small3.1:latest",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 128000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "o1": {
+            "id": "o1",
+            "name": "o1",
+            "mode": [
+                "chat",
+                "vision",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o1",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o1-mini": {
+            "id": "o1-mini",
+            "name": "o1-mini",
+            "mode": [
+                "chat",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o1-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 65536,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o1-preview": {
+            "id": "o1-preview",
+            "name": "o1-preview",
+            "mode": [
+                "chat",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o1-preview",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 65536,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o1-pro": {
+            "id": "o1-pro",
+            "name": "o1-pro",
+            "mode": [
+                "chat",
+                "vision",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o1-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3": {
+            "id": "o3",
+            "name": "o3",
+            "mode": [
+                "chat",
+                "vision",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3-deep-research": {
+            "id": "o3-deep-research",
+            "name": "o3-deep-research",
+            "mode": [
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3-deep-research",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3-mini-high": {
+            "id": "o3-mini",
+            "name": "o3-mini (high)",
+            "mode": [
+                "chat",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "high"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3-mini-low": {
+            "id": "o3-mini",
+            "name": "o3-mini (low)",
+            "mode": [
+                "chat",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "low"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3-mini-medium": {
+            "id": "o3-mini",
+            "name": "o3-mini (medium)",
+            "mode": [
+                "chat",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {
+                "reasoning_effort": "medium"
+            },
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o3-pro": {
+            "id": "o3-pro",
+            "name": "o3-pro",
+            "mode": [
+                "chat",
+                "vision",
+                "agent",
+                "expert",
+                "llama_index",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o3-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o4-mini": {
+            "id": "o4-mini",
+            "name": "o4-mini",
+            "mode": [
+                "chat",
+                "llama_index",
+                "agent",
+                "expert",
+                "agent_llama",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o4-mini",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "o4-mini-deep-research": {
+            "id": "o4-mini-deep-research",
+            "name": "o4-mini-deep-research",
+            "mode": [
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "o4-mini-deep-research",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint}"
+                    },
+                    {
+                        "name": "AZURE_OPENAI_ENDPOINT",
+                        "value": "{api_azure_endpoint}"
+                    },
+                    {
+                        "name": "OPENAI_API_VERSION",
+                        "value": "{api_azure_version}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 100000,
+            "default": false,
+            "input": [
+                "text",
+                "image"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "openai",
+            "tool_calls": true
+        },
+        "qwen2.5-coder:7b": {
+            "id": "qwen2.5-coder:7b",
+            "name": "qwen2.5-coder:7b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "qwen2.5-coder:7b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 32000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "qwen2:7b": {
+            "id": "qwen2:7b",
+            "name": "qwen2:7b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "qwen2:7b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 32000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "qwen3:30b-a3b": {
+            "id": "qwen3:30b-a3b",
+            "name": "qwen3:30b-a3b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "qwen3:30b-a3b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 40000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "qwen3:8b": {
+            "id": "qwen3:8b",
+            "name": "qwen3:8b",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "qwen3:8b",
+                        "type": "str"
+                    }
+                ],
+                "env": []
+            },
+            "ctx": 40000,
+            "tokens": 4096,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "ollama",
+            "tool_calls": false
+        },
+        "r1-1776": {
+            "id": "r1-1776",
+            "name": "r1-1776",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "r1-1776",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        },
+        "sonar": {
+            "id": "sonar",
+            "name": "sonar",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "sonar",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        },
+        "sonar-deep-research": {
+            "id": "sonar-deep-research",
+            "name": "sonar-deep-research",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "sonar-deep-research",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        },
+        "sonar-pro": {
+            "id": "sonar-pro",
+            "name": "sonar-pro",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "sonar-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 200000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        },
+        "sonar-reasoning": {
+            "id": "sonar-reasoning",
+            "name": "sonar-reasoning",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "sonar-reasoning",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 16384,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        },
+        "sonar-reasoning-pro": {
+            "id": "sonar-reasoning-pro",
+            "name": "sonar-reasoning-pro",
+            "mode": [
+                "llama_index",
+                "agent",
+                "agent_llama",
+                "expert",
+                "chat",
+                "research",
+                "agent_openai"
+            ],
+            "llama_index": {
+                "args": [
+                    {
+                        "name": "model",
+                        "value": "sonar-reasoning-pro",
+                        "type": "str"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": "{api_key_perplexity}"
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": "{api_endpoint_perplexity}"
+                    }
+                ]
+            },
+            "ctx": 128000,
+            "tokens": 8000,
+            "default": false,
+            "input": [
+                "text"
+            ],
+            "output": [
+                "text"
+            ],
+            "extra": {},
+            "imported": false,
+            "provider": "perplexity",
+            "tool_calls": true
+        }
+    }
+}

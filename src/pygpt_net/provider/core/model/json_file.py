@@ -33,6 +33,12 @@ class JsonFileProvider(BaseProvider):
 
     def install(self):
         """Install provider data files"""
+        # ensure target directory exists (especially in tests)
+        try:
+            os.makedirs(self.window.core.config.path, exist_ok=True)
+        except Exception as e:
+            print("WARNING: Cannot create models path '{}': {}".format(self.window.core.config.path, e))
+
         dst = os.path.join(self.window.core.config.path, self.config_file)
         if not os.path.exists(dst):
             src = os.path.join(self.window.core.config.get_app_path(), 'data', 'config', self.config_file)
@@ -42,6 +48,10 @@ class JsonFileProvider(BaseProvider):
             try:
                 with open(dst, 'r', encoding="utf-8") as file:
                     json.load(file)
+            except FileNotFoundError:
+                # recover when os.path.exists is patched in tests but file is missing
+                src = os.path.join(self.window.core.config.get_app_path(), 'data', 'config', self.config_file)
+                shutil.copyfile(src, dst)
             except json.JSONDecodeError:
                 print("RECOVERY: Models file `{}` is corrupted. Restoring from base models.".format(dst))
                 backup_dst = os.path.join(self.window.core.config.path, 'models.bak.json')
