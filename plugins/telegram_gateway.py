@@ -305,6 +305,7 @@ class Plugin(BasePlugin):
         sent_any = False
         try:
             async for texts, images in self._ask_pygpt(text):
+                log.info("[TelegramGateway] Got reply: %s texts, %s images", len(texts), len(images))
                 if not texts and images and not sent_any:
                     placeholder = escape_markdown("image generated", version=2)
                     await context.bot.send_message(
@@ -397,6 +398,7 @@ class Plugin(BasePlugin):
 
         while loop.time() < deadline:
             last_ctx = self.window.core.ctx.get_last_item()
+            log.info("[TelegramGateway] Current context: %s, last context: %s", curr_ctx, last_ctx)
             if (
                 last_ctx is not None
                 and last_ctx is not curr_ctx
@@ -438,14 +440,22 @@ class Plugin(BasePlugin):
                 prev_images_len = len(curr_images)
 
             if new_texts or new_images:
+                log.info(
+                    "[TelegramGateway] Yielding %s new texts and %s new images",
+                    len(new_texts),
+                    len(new_images),
+                )
                 last_seen = loop.time()
                 got_any = True
                 yield new_texts, new_images
 
             if got_any and (loop.time() - last_seen) > idle_window:
+                log.info("[TelegramGateway] Idle window expired; finishing")
                 break
 
             await asyncio.sleep(0.25)
+
+        log.info("[TelegramGateway] _ask_pygpt done")
 
         if not got_any:
             raise RuntimeError("Timed out waiting for PyGPT reply")
