@@ -390,14 +390,26 @@ class Plugin(BasePlugin):
 
         last_seen = loop.time()
         got_any = False
-        prev_output = getattr(ctx, "output", None)
-        prev_results_len = len(getattr(ctx, "results", []) or [])
-        prev_images_len = len(getattr(ctx, "images", []) or [])
+        curr_ctx = ctx
+        prev_output = getattr(curr_ctx, "output", None)
+        prev_results_len = len(getattr(curr_ctx, "results", []) or [])
+        prev_images_len = len(getattr(curr_ctx, "images", []) or [])
 
         while loop.time() < deadline:
-            curr_output = getattr(ctx, "output", None)
-            curr_results = getattr(ctx, "results", []) or []
-            curr_images = getattr(ctx, "images", []) or []
+            last_ctx = self.window.core.ctx.get_last_item()
+            if (
+                last_ctx is not None
+                and last_ctx is not curr_ctx
+                and getattr(last_ctx, "sub_reply", False)
+            ):
+                curr_ctx = last_ctx
+                prev_output = None
+                prev_results_len = 0
+                prev_images_len = 0
+
+            curr_output = getattr(curr_ctx, "output", None)
+            curr_results = getattr(curr_ctx, "results", []) or []
+            curr_images = getattr(curr_ctx, "images", []) or []
 
             new_texts: list[str] = []
             new_images: list[str] = []
