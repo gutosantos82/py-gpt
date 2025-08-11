@@ -370,7 +370,7 @@ class Plugin(BasePlugin):
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
-        idle_window = 10.0
+        idle_window = 60.0
 
         last_seen = loop.time()
         got_any = False
