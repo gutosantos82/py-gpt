@@ -28,6 +28,7 @@ import asyncio
 import logging
 import threading
 import os
+import httpx
 from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator
 
@@ -44,6 +45,7 @@ from telegram.ext import (
     filters,
 )
 from telegram.helpers import escape_markdown
+from telegram.error import TimedOut
 from PySide6.QtCore import QTimer, QObject, Signal
 
 log = logging.getLogger(__name__)
@@ -250,7 +252,12 @@ class Plugin(BasePlugin):
         return self._call_on_main(lambda: self.window.controller.chat.text.send(text, internal=internal))
 
     async def _tg_main(self, token: str):
-        app = ApplicationBuilder().token(token).build()
+        app = (
+            ApplicationBuilder()
+                .token(token)
+                .read_timeout(30)
+                .build()
+        )
 
         # Message handler: plain text only
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
@@ -318,12 +325,22 @@ class Plugin(BasePlugin):
                     )
                 for img_path in images:
                     sent_any = True
+                    img_path = self.window.core.filesystem.to_workdir(img_path)
                     try:
-                        img_path = self.window.core.filesystem.to_workdir(img_path)
                         if not os.path.exists(img_path):
                             raise FileNotFoundError(f"Missing image: {img_path}")
                         with open(img_path, "rb") as fh:
-                            await context.bot.send_photo(chat_id=chat_id, photo=fh)
+                            try:
+                                await context.bot.send_photo(
+                                    chat_id=chat_id,
+                                    photo=fh,
+                                    read_timeout=30,
+                                )
+                            except (TimedOut, httpx.ReadTimeout):
+                                log.warning(
+                                    "Timed out while sending image %s; treating as sent",
+                                    img_path,
+                                )
                     except Exception:
                         log.exception("Failed to send image %s", img_path)
         except Exception as e:
