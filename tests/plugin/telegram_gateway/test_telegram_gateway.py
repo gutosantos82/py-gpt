@@ -161,3 +161,65 @@ def test_on_text_forwards_tool_reply(mock_open_fn, mock_exists, mock_window):
         disable_web_page_preview=True,
     )
     bot.send_photo.assert_called_once()
+
+
+def test_on_text_ignores_empty_chunks(mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    async def fake_ask(_):
+        yield ["", "   ", "done"], []
+
+    plugin._ask_pygpt = fake_ask
+
+    bot = MagicMock()
+    bot.send_chat_action = AsyncMock()
+    bot.send_message = AsyncMock()
+
+    context = MagicMock()
+    context.bot = bot
+
+    update = MagicMock()
+    update.effective_chat.id = 1
+    update.effective_user.id = 2
+    update.message.text = "hi"
+
+    asyncio.run(plugin._on_text(update, context))
+
+    bot.send_message.assert_called_once_with(
+        chat_id=1,
+        text=escape_markdown("done", version=2),
+        parse_mode=ParseMode.MARKDOWN_V2,
+        disable_web_page_preview=True,
+    )
+
+
+def test_on_text_no_response_when_all_empty(mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    async def fake_ask(_):
+        yield ["", "  "], []
+
+    plugin._ask_pygpt = fake_ask
+
+    bot = MagicMock()
+    bot.send_chat_action = AsyncMock()
+    bot.send_message = AsyncMock()
+
+    context = MagicMock()
+    context.bot = bot
+
+    update = MagicMock()
+    update.effective_chat.id = 1
+    update.effective_user.id = 2
+    update.message.text = "hi"
+
+    asyncio.run(plugin._on_text(update, context))
+
+    bot.send_message.assert_called_once_with(
+        chat_id=1,
+        text=escape_markdown("(no response)", version=2),
+        parse_mode=ParseMode.MARKDOWN_V2,
+        disable_web_page_preview=True,
+    )

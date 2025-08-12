@@ -315,8 +315,11 @@ class Plugin(BasePlugin):
                         disable_web_page_preview=True,
                     )
                 for reply_text in texts:
+                    cleaned = reply_text.strip()
+                    if not cleaned:
+                        continue
                     sent_any = True
-                    reply_text = escape_markdown(reply_text or "(no response)", version=2)
+                    reply_text = escape_markdown(cleaned, version=2)
                     await context.bot.send_message(
                         chat_id=chat_id,
                         text=reply_text,
