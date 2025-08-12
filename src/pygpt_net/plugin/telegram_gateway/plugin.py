@@ -59,6 +59,8 @@ from telegram.helpers import escape_markdown
 from telegram.error import TimedOut
 from PySide6.QtCore import QTimer, QObject, Signal
 
+from .config import Config
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
@@ -103,20 +105,12 @@ class Plugin(BasePlugin):
         self.state = _BotState()  # runtime TG state
         self.allowed_users = set()  # optional allowlist by Telegram user id
         self._invoker = MainThreadInvoker(parent=self.window)
-        # plugin options
-        self.add_option(
-            "bot_token",
-            type="text",
-            label="Telegram Bot Token",
-            description="Create a bot with @BotFather and paste the token here.",
-            secret=True,
-        )
-        self.add_option(
-            "allowed_user_ids",
-            type="text",
-            label="Allowed Telegram User IDs (comma-separated, optional)",
-            description="Leave blank to allow anyone who knows the bot username.",
-        )
+        self.config = Config(self)
+        self.init_options()
+
+    def init_options(self):
+        """Initialize options"""
+        self.config.from_defaults(self)
 
     # ---------- PyGPT lifecycle ----------
 
