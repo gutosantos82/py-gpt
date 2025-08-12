@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2.5.98 (2025-08-12)
+
+- Added support for GPT-5 in LlamaIndex/Chat with Files mode.
+- Experts are now allowed in all OpenAI agent types.
+- Improved the output of OpenAI agents (separated context items).
+- Refactored memory cleanup for thread workers.
+- Optimized streaming.
+
 ## 2.5.97 (2025-08-11)
 
 - Fix: attribute error in prev ctx.

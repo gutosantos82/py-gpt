@@ -6,11 +6,11 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.01 19:00:00                  #
+# Updated Date: 2025.08.11 19:00:00                  #
 # ================================================== #
 
 from dataclasses import dataclass
-from typing import Dict, Any, Tuple, Literal
+from typing import Dict, Any, Tuple, Literal, Optional
 
 from agents import (
     Agent as OpenAIAgent,
@@ -36,6 +36,8 @@ from pygpt_net.provider.gpt.agents.remote_tools import get_remote_tools, is_comp
 from pygpt_net.provider.gpt.agents.response import StreamHandler
 
 from ..base import BaseAgent
+from ...gpt.agents.experts import get_experts
+
 
 @dataclass
 class EvaluationFeedback:
@@ -76,11 +78,15 @@ class Agent(BaseAgent):
         agent_name = preset.name if preset else "Agent"
         model = kwargs.get("model", ModelItem())
         tools = kwargs.get("function_tools", [])
+        handoffs = kwargs.get("handoffs", [])
         kwargs = {
             "name": agent_name,
             "instructions": self.get_option(preset, "base", "prompt"),
             "model": model.id,
         }
+        if handoffs:
+            kwargs["handoffs"] = handoffs
+
         tool_kwargs = append_tools(
             tools=tools,
             window=window,
@@ -140,6 +146,7 @@ class Agent(BaseAgent):
             ctx: CtxItem = None,
             stream: bool = False,
             bridge: ConnectionContext = None,
+            use_partial_ctx: Optional[bool] = False,
     ) -> Tuple[CtxItem, str, str]:
         """
         Run agent (async)
@@ -151,6 +158,7 @@ class Agent(BaseAgent):
         :param ctx: Context item
         :param stream: Whether to stream output
         :param bridge: Connection context for handling stop and step events
+        :param use_partial_ctx: Use partial ctx per cycle
         :return: Current ctx, final output, last response ID
         """
         final_output = ""
@@ -161,6 +169,16 @@ class Agent(BaseAgent):
         max_steps = agent_kwargs.get("max_iterations", 10)
         tools = agent_kwargs.get("function_tools", [])
         preset = context.preset
+
+        # add experts
+        experts = get_experts(
+            window=window,
+            preset=preset,
+            verbose=verbose,
+            tools=tools,
+        )
+        if experts:
+            agent_kwargs["handoffs"] = experts
 
         agent = self.get_agent(window, agent_kwargs)
 
@@ -239,7 +257,9 @@ class Agent(BaseAgent):
                         break
                     final_output, response_id = handler.handle(event, ctx)
 
-                bridge.on_next(ctx)
+                if not use_partial_ctx:
+                    bridge.on_next(ctx)
+
                 if bridge.stopped():
                     bridge.on_stop(ctx)
                     break
@@ -251,16 +271,35 @@ class Agent(BaseAgent):
                 info = f"\n___\n**Evaluator score: {result.score}**\n\n"
                 if result.score == "pass":
                     info += "\n\n**Response is good enough, exiting.**\n"
-                    ctx.stream = info
-                    bridge.on_step(ctx, False)
-                    final_output += info
+                    if use_partial_ctx:
+                        ctx = bridge.on_next_ctx(
+                            ctx=ctx,
+                            input=result.feedback,  # new ctx: input
+                            output=final_output,  # prev ctx: output
+                            response_id=response_id,
+                            finish=True,
+                        )
+                    else:
+                        ctx.stream = info
+                        bridge.on_step(ctx, False)
+                        final_output += info
                     break
 
                 info += "\n\n**Re-running with feedback**\n\n" + f"Feedback: {result.feedback}\n___\n"
-                ctx.stream = info
-                bridge.on_step(ctx, False)
                 input_items.append({"content": f"Feedback: {result.feedback}", "role": "user"})
-                handler.to_buffer(info)
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input=result.feedback, # new ctx: input
+                        output=final_output,  # prev ctx: output
+                        response_id=response_id,
+                    )
+                    handler.new()
+                else:
+                    ctx.stream = info
+                    bridge.on_step(ctx, False)
+                    handler.to_buffer(info)
 
         return ctx, final_output, response_id
 

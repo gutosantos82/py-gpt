@@ -6,10 +6,11 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.09 01:00:00                  #
+# Updated Date: 2025.08.11 19:00:00                  #
 # ================================================== #
+
 import copy
-from typing import Dict, Any, Tuple, Union
+from typing import Dict, Any, Tuple, Union, Optional
 
 from agents import (
     Agent as OpenAIAgent,
@@ -34,6 +35,8 @@ from pygpt_net.provider.gpt.agents.remote_tools import append_tools
 from pygpt_net.provider.gpt.agents.response import StreamHandler
 
 from ..base import BaseAgent
+from ...gpt.agents.experts import get_experts
+
 
 class Agent(BaseAgent):
 
@@ -68,6 +71,7 @@ class Agent(BaseAgent):
         preset = context.preset
         model = kwargs.get("model", ModelItem())
         tools = kwargs.get("function_tools", [])
+        handoffs = kwargs.get("handoffs", [])
         id = kwargs.get("bot_id", 1)
         option_key = f"bot_{id}"
         kwargs = {
@@ -75,6 +79,9 @@ class Agent(BaseAgent):
             "instructions": self.get_option(preset, option_key, "prompt"),
             "model": model.id,
         }
+        if handoffs:
+            kwargs["handoffs"] = handoffs
+
         tool_kwargs = append_tools(
             tools=tools,
             window=window,
@@ -177,6 +184,7 @@ class Agent(BaseAgent):
             ctx: CtxItem = None,
             stream: bool = False,
             bridge: ConnectionContext = None,
+            use_partial_ctx: Optional[bool] = False,
     ) -> Tuple[CtxItem, str, str]:
         """
         Run agent (async)
@@ -188,6 +196,7 @@ class Agent(BaseAgent):
         :param ctx: Context item
         :param stream: Whether to stream output
         :param bridge: Connection context for handling stop and step events
+        :param use_partial_ctx: Use partial ctx per cycle
         :return: Current ctx, final output, last response ID
         """
         final_output = ""
@@ -197,6 +206,17 @@ class Agent(BaseAgent):
         verbose = agent_kwargs.get("verbose", False)
         max_steps = agent_kwargs.get("max_iterations", 10)
         preset = agent_kwargs.get("preset", PresetItem())
+        tools = agent_kwargs.get("function_tools", [])
+
+        # add experts
+        experts = get_experts(
+            window=window,
+            preset=preset,
+            verbose=verbose,
+            tools=tools,
+        )
+        if experts:
+            agent_kwargs["handoffs"] = experts
 
         bot_1_kwargs = copy.deepcopy(agent_kwargs)
         bot_1_kwargs["bot_id"] = 1
@@ -264,6 +284,15 @@ class Agent(BaseAgent):
                 input_items = self.reverse_items(input_items, verbose=reverse_verbose)
         else:
             handler = StreamHandler(window, bridge)
+            if use_partial_ctx:
+                # we must replace message roles at beginning, second bot will be user
+                msg_counter = 1
+                for item in input_items:
+                    if item.get("role") == "assistant":
+                        if msg_counter % 2 == 0:
+                            item["role"] = "user"
+                        msg_counter += 1
+
             begin = True
             while True:
                 # -------- bot 1 --------
@@ -282,22 +311,34 @@ class Agent(BaseAgent):
                 bridge.on_step(ctx, begin)
                 begin = False
                 handler.begin = begin
-                handler.to_buffer(title)
+                if not use_partial_ctx:
+                    handler.to_buffer(title)
                 async for event in result.stream_events():
                     if bridge.stopped():
                         bridge.on_stop(ctx)
                         break
                     final_output, response_id = handler.handle(event, ctx)
 
+                output_1 = final_output
+
                 if bridge.stopped():
                     bridge.on_stop(ctx)
                     break
 
-                bridge.on_next(ctx)
-
                 # get and reverse items
                 input_items = result.to_input_list()
                 input_items = self.reverse_items(input_items, verbose=reverse_verbose)
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input="",  # new ctx: input
+                        output=output_1,  # prev ctx: output
+                        response_id=response_id,
+                    )
+                    handler.new()
+                else:
+                    bridge.on_next(ctx)
 
                 # -------- bot 2 --------
                 kwargs["input"] = input_items
@@ -312,22 +353,34 @@ class Agent(BaseAgent):
                 title = "\n\n**Bot 2**\n\n"
                 ctx.stream = title
                 bridge.on_step(ctx, False)
-                handler.to_buffer(title)
+                if not use_partial_ctx:
+                    handler.to_buffer(title)
                 async for event in result.stream_events():
                     if bridge.stopped():
                         bridge.on_stop(ctx)
                         break
                     final_output, response_id = handler.handle(event, ctx)
 
+                output_2 = final_output
+
                 if bridge.stopped():
                     bridge.on_stop(ctx)
                     break
 
-                bridge.on_next(ctx)
-
                 # get and reverse items
                 input_items = result.to_input_list()
                 input_items = self.reverse_items(input_items, verbose=reverse_verbose)
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input="", # new ctx: input
+                        output=output_2,  # prev ctx: output
+                        response_id=response_id,
+                    )
+                    handler.new()
+                else:
+                    bridge.on_next(ctx)
 
         return ctx, final_output, response_id
 

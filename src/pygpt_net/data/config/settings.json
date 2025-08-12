@@ -1945,6 +1945,20 @@
         "advanced": false,
         "tab": "llama"
     },
+    "agent.openai.response.split": {
+        "section": "agent",
+        "description": "settings.agent.openai.response.split.desc",
+        "type": "bool",
+        "slider": false,
+        "label": "settings.agent.openai.response.split",
+        "value": true,
+        "min": 0,
+        "max": 0,
+        "multiplier": 1,
+        "step": 1,
+        "advanced": false,
+        "tab": "llama"
+    },
     "agent.llama.verbose": {
         "section": "agent",
         "type": "bool",
@@ -2272,7 +2286,7 @@
         "advanced": false
     },
     "access.microphone.notify": {
-        "section": "access",
+        "section": "audio",
         "type": "bool",
         "slider": false,
         "label": "settings.access.microphone.notify",
@@ -2281,7 +2295,8 @@
         "max": null,
         "multiplier": null,
         "step": null,
-        "advanced": false
+        "advanced": false,
+        "tab": "options"
     },
     "access.audio.notify.execute": {
         "section": "access",

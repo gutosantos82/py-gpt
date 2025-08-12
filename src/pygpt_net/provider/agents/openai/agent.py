@@ -6,10 +6,10 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.01 03:00:00                  #
+# Updated Date: 2025.08.11 19:00:00                  #
 # ================================================== #
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 from agents import (
     Agent as OpenAIAgent,
@@ -34,6 +34,8 @@ from pygpt_net.provider.gpt.agents.computer import Agent as ComputerAgent, Local
 from pygpt_net.provider.gpt.agents.response import StreamHandler
 
 from ..base import BaseAgent
+from ...gpt.agents.experts import get_experts
+
 
 class Agent(BaseAgent):
     def __init__(self, *args, **kwargs):
@@ -57,11 +59,15 @@ class Agent(BaseAgent):
         agent_name = preset.name if preset else "Agent"
         model = kwargs.get("model", ModelItem())
         tools = kwargs.get("function_tools", [])
+        handoffs = kwargs.get("handoffs", [])
         kwargs = {
             "name": agent_name,
             "instructions": system_prompt,
             "model": model.id,
         }
+        if handoffs:
+            kwargs["handoffs"] = handoffs
+
         tool_kwargs = append_tools(
             tools=tools,
             window=window,
@@ -82,6 +88,7 @@ class Agent(BaseAgent):
             ctx: CtxItem = None,
             stream: bool = False,
             bridge: ConnectionContext = None,
+            use_partial_ctx: Optional[bool] = False,
     ) -> Tuple[CtxItem, str, str]:
         """
         Run agent (async)
@@ -93,16 +100,29 @@ class Agent(BaseAgent):
         :param ctx: Context item
         :param stream: Whether to stream output
         :param bridge: Connection context for agent operations
+        :param use_partial_ctx: Use partial ctx per cycle
         :return: Current ctx, final output, last response ID
         """
         final_output = ""
         response_id = None
         model = agent_kwargs.get("model", ModelItem())
         verbose = agent_kwargs.get("verbose", False)
-        agent = self.get_agent(window, agent_kwargs)
+        tools = agent_kwargs.get("function_tools", [])
         context = agent_kwargs.get("context", BridgeContext())
-        max_steps = agent_kwargs.get("max_iterations", 10)
         preset = context.preset if context else None
+
+        # add experts
+        experts = get_experts(
+            window=window,
+            preset=preset,
+            verbose=verbose,
+            tools=tools,
+        )
+        if experts:
+            agent_kwargs["handoffs"] = experts
+
+        agent = self.get_agent(window, agent_kwargs)
+        max_steps = agent_kwargs.get("max_iterations", 10)
         kwargs = {
             "input": messages,
             "max_turns": int(max_steps),

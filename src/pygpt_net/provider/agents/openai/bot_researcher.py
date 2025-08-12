@@ -6,10 +6,10 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.01 19:00:00                  #
+# Updated Date: 2025.08.11 19:00:00                  #
 # ================================================== #
 
-from typing import Dict, Any, Tuple, Union
+from typing import Dict, Any, Tuple, Union, Optional
 
 from agents import (
     Agent as OpenAIAgent,
@@ -35,6 +35,8 @@ from pygpt_net.provider.gpt.agents.response import StreamHandler
 
 from ..base import BaseAgent
 from .bots.research_bot.manager import ResearchManager
+from ...gpt.agents.experts import get_experts
+
 
 class Agent(BaseAgent):
 
@@ -110,6 +112,7 @@ class Agent(BaseAgent):
             ctx: CtxItem = None,
             stream: bool = False,
             bridge: ConnectionContext = None,
+            use_partial_ctx: Optional[bool] = False,
     ) -> Tuple[CtxItem, str, Union[str, None]]:
         """
         Run agent (async)
@@ -121,6 +124,7 @@ class Agent(BaseAgent):
         :param ctx: Context item
         :param stream: Whether to stream output
         :param bridge: Connection context for agent operations
+        :param use_partial_ctx: Use partial ctx per cycle
         :return: Current ctx, final output, last response ID
         """
         response_id = None
@@ -162,6 +166,14 @@ class Agent(BaseAgent):
             custom_provider = get_custom_model_provider(window, model_planner)
             model_planner_kwargs["run_config"] = RunConfig(model_provider=custom_provider)
 
+        # get experts
+        experts = get_experts(
+            window=window,
+            preset=preset,
+            verbose=verbose,
+            tools=tools,
+        )
+
         bot = ResearchManager(
             window=window,
             ctx=ctx,
@@ -175,6 +187,7 @@ class Agent(BaseAgent):
                 "allow_local_tools": self.get_option(preset, "planner", "allow_local_tools"),
                 "allow_remote_tools": self.get_option(preset, "planner", "allow_remote_tools"),
                 "run_kwargs": model_planner_kwargs,
+                "experts": experts,
             },
             search_config={
                 "prompt": self.get_option(preset, "search", "prompt"),
@@ -182,6 +195,7 @@ class Agent(BaseAgent):
                 "allow_local_tools": self.get_option(preset, "search", "allow_local_tools"),
                 "allow_remote_tools": self.get_option(preset, "search", "allow_remote_tools"),
                 "run_kwargs": model_search_kwargs,
+                "experts": experts,
             },
             writer_config={
                 "prompt": prompt,
@@ -189,6 +203,7 @@ class Agent(BaseAgent):
                 "allow_local_tools": self.get_option(preset, "writer", "allow_local_tools"),
                 "allow_remote_tools": self.get_option(preset, "writer", "allow_remote_tools"),
                 "run_kwargs": model_kwargs,
+                "experts": experts,
             },
             history=messages if messages else [],
         )

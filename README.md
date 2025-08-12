@@ -2,7 +2,7 @@
 
 [![pygpt](https://snapcraft.io/pygpt/badge.svg)](https://snapcraft.io/pygpt)
 
-Release: **2.5.97** | build: **2025-08-11** | Python: **>=3.10, <3.14**
+Release: **2.5.98** | build: **2025-08-12** | Python: **>=3.10, <3.14**
 
 > Official website: https://pygpt.net | Documentation: https://pygpt.readthedocs.io
 > 
@@ -799,6 +799,8 @@ Below is a pattern for how different types of agents work. You can use these pat
 - Bot 1 generates a response and sends it to Bot 2.
 - Bot 2 receives the response from Bot 1 as input, provides an answer, and sends the response back to Bot 1 as its input. This cycle repeats.
 - The human can interrupt the loop at any time and update the entire discussion.
+
+**Tip**: Starting from version `2.5.97`, you can assign and use Experts in all of the agent types.
 
 **Limitations:**
 
@@ -3198,6 +3200,8 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Max files to store`: Max files to store on disk for audio cache.
 
+- `Audio notify microphone listening start/stop`: enables audio "tick" notify when microphone listening started/ended.
+
 **Indexes / LlamaIndex**
 
 **General**
@@ -3268,7 +3272,7 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Display a tray notification when the goal is achieved.`: If enabled, a notification will be displayed after goal achieved / finished run.
 
-**Agents (LlamaIndex)**
+**Agents (LlamaIndex / OpenAI)**
 
 - `Max steps (per iteration)` - Max steps is one iteration before goal achieved
 
@@ -3277,6 +3281,8 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 - `Append and compare previous evaluation prompt in next evaluation` - If enabled, previous improvement prompt will be checked in next eval in loop, default: False
 
 - `Verbose` - enables verbose mode.
+
+- `Split response messages` - Split response messages to separated context items in OpenAI Agents mode. Stream mode only.
 
 **Autonomous (Legacy agents)**
 
@@ -3309,8 +3315,6 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 - `Use voice synthesis to describe events on the screen.`: enables audio description of on-screen events.
 
 - `Use audio output cache`: If enabled, all static audio outputs will be cached on the disk instead of being generated every time. Default: True.
-
-- `Audio notify microphone listening start/stop`: enables audio "tick" notify when microphone listening started/ended.
 
 - `Audio notify voice command execution`: enables audio "tick" notify when voice command is executed.
 
@@ -4262,6 +4266,14 @@ may consume additional tokens that are not displayed in the main window.
 # CHANGELOG
 
 ## Recent changes:
+
+**2.5.98 (2025-08-12)**
+
+- Added support for GPT-5 in LlamaIndex/Chat with Files mode.
+- Experts are now allowed in all OpenAI agent types.
+- Improved the output of OpenAI agents (separated context items).
+- Refactored memory cleanup for thread workers.
+- Optimized streaming.
 
 **2.5.97 (2025-08-11)**
 
