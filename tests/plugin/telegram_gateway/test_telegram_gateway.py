@@ -7,6 +7,8 @@
 # ================================================== #
 
 import asyncio
+import threading
+import time
 from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 
 from telegram.helpers import escape_markdown
@@ -223,3 +225,36 @@ def test_on_text_no_response_when_all_empty(mock_window):
         parse_mode=ParseMode.MARKDOWN_V2,
         disable_web_page_preview=True,
     )
+
+
+def test_stop_bot_joins_thread(mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    plugin.options["bot_token"]["value"] = "123"
+
+    async def fake_tg_main(self, token):
+        class DummyUpdater:
+            async def stop(self):
+                pass
+
+        class DummyApp:
+            def __init__(self):
+                self.updater = DummyUpdater()
+
+            async def stop(self):
+                pass
+
+            async def shutdown(self):
+                pass
+
+        self.state.tg_app = DummyApp()
+        while not self.state.stop_event.is_set():
+            await asyncio.sleep(0.01)
+
+    with patch.object(Plugin, "_tg_main", fake_tg_main):
+        plugin._start_bot()
+        time.sleep(0.05)
+        plugin._stop_bot()
+        assert plugin.state.thread is None
+        assert not any(t.name == "tg-gateway" for t in threading.enumerate())

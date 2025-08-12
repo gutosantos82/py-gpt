@@ -31,6 +31,7 @@ import os
 import httpx
 from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator
+from contextlib import suppress
 
 from pygpt_net.core.events import Event  # event enum (docs list the names)
 from pygpt_net.plugin.base.plugin import BasePlugin
@@ -162,18 +163,28 @@ class Plugin(BasePlugin):
         log.info("[TelegramGateway] Telegram bot started")
 
     def _stop_bot(self):
+        self.state.stop_event.set()
         if self.state.loop and self.state.tg_app:
             log.info("[TelegramGateway] Stopping Telegram bot...")
+            loop = self.state.loop
+            app = self.state.tg_app
             try:
                 async def _shutdown():
-                    await self.state.tg_app.stop()
-                    await self.state.tg_app.shutdown()
+                    with suppress(RuntimeError):
+                        await app.updater.stop()
+                    with suppress(RuntimeError):
+                        await app.stop()
+                    with suppress(RuntimeError):
+                        await app.shutdown()
 
-                asyncio.run_coroutine_threadsafe(_shutdown(), self.state.loop).result(timeout=10)
+                asyncio.run_coroutine_threadsafe(_shutdown(), loop).result(timeout=10)
             except Exception as e:
                 log.debug("shutdown exception: %s", e)
 
-        self.state.stop_event.set()
+        thread = self.state.thread
+        if thread and thread.is_alive():
+            thread.join(timeout=10)
+
         self.state.tg_app = None
         self.state.loop = None
         self.state.thread = None
@@ -274,9 +285,12 @@ class Plugin(BasePlugin):
             while not self.state.stop_event.is_set():
                 await asyncio.sleep(0.25)
         finally:
-            await app.updater.stop()
-            await app.stop()
-            await app.shutdown()
+            with suppress(RuntimeError):
+                await app.updater.stop()
+            with suppress(RuntimeError):
+                await app.stop()
+            with suppress(RuntimeError):
+                await app.shutdown()
 
     # ---------- Telegram handlers ----------
 
