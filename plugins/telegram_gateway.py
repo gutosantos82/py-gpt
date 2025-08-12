@@ -415,7 +415,6 @@ class Plugin(BasePlugin):
 
         while loop.time() < deadline:
             last_ctx = self.window.core.ctx.get_last_item()
-            log.info("[TelegramGateway] Current context: %s, last context: %s", curr_ctx, last_ctx)
             if (
                 last_ctx is not None
                 and last_ctx is not curr_ctx
