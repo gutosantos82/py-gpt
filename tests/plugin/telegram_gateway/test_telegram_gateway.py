@@ -44,6 +44,9 @@ def mock_window():
     window.core.config.get_lang = MagicMock(return_value='en')
     window.core.debug = MagicMock()
     window.controller = MagicMock()
+    window.controller.kernel = MagicMock()
+    window.controller.kernel.STATE_BUSY = 'busy'
+    window.controller.kernel.state = 'idle'
     window.tools = MagicMock()
     window.ui = MagicMock()
     window.threadpool = MagicMock()
