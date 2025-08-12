@@ -35,6 +35,12 @@ from contextlib import suppress
 
 from pygpt_net.core.events import Event  # event enum (docs list the names)
 from pygpt_net.plugin.base.plugin import BasePlugin
+from pygpt_net.core.types import (
+    MODE_AGENT_LLAMA,
+    MODE_AGENT_OPENAI,
+    AGENT_TYPE_LLAMA,
+    AGENT_TYPE_OPENAI,
+)
 
 # Telegram (python-telegram-bot v20+)
 from telegram import Update
@@ -276,6 +282,7 @@ class Plugin(BasePlugin):
         app.add_handler(CommandHandler("mode", self._on_mode))
         app.add_handler(CommandHandler("plugin", self._on_plugin))
         app.add_handler(CommandHandler("model", self._on_model))
+        app.add_handler(CommandHandler("agent", self._on_agent))
 
         # Optionally, you can add a /start or /help command handler
         # from telegram.ext import CommandHandler
@@ -446,6 +453,88 @@ class Plugin(BasePlugin):
             self._call_on_main(lambda: self.window.controller.model.select(target_model))
             reply_text = escape_markdown(
                 f"Model switched to {target_model}",
+                version=2,
+            )
+        except Exception as e:
+            reply_text = escape_markdown(f"⚠️ Error: {e}", version=2)
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=reply_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            disable_web_page_preview=True,
+        )
+
+    async def _on_agent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not update.effective_chat or not update.effective_user:
+            return
+
+        chat_id = update.effective_chat.id
+        user_id = update.effective_user.id
+
+        if self.allowed_users and user_id not in self.allowed_users:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="This bot is locked. Your Telegram user ID is not allowed.",
+            )
+            return
+
+        current_mode = self.window.core.config.get("mode")
+        if current_mode == MODE_AGENT_LLAMA:
+            config_key = "agent.llama.provider"
+            agent_type = AGENT_TYPE_LLAMA
+        elif current_mode == MODE_AGENT_OPENAI:
+            config_key = "agent.openai.provider"
+            agent_type = AGENT_TYPE_OPENAI
+        else:
+            reply_text = escape_markdown(
+                "⚠️ Agent provider can be changed only in agent modes.",
+                version=2,
+            )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
+
+        args = context.args or []
+        if not args:
+            choices = self.window.core.agents.provider.get_choices(agent_type)
+            agent_ids = ", ".join([list(item.keys())[0] for item in choices])
+            reply_text = escape_markdown(
+                f"Usage: /agent <id>\nAvailable agents: {agent_ids}",
+                version=2,
+            )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
+
+        agent_id = args[0]
+        if not self.window.core.agents.provider.has(agent_id):
+            choices = self.window.core.agents.provider.get_choices(agent_type)
+            agent_ids = ", ".join([list(item.keys())[0] for item in choices])
+            reply_text = escape_markdown(
+                f"⚠️ Unknown agent: {agent_id}\nAvailable agents: {agent_ids}",
+                version=2,
+            )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
+
+        try:
+            self._call_on_main(lambda: self.window.core.config.set(config_key, agent_id))
+            reply_text = escape_markdown(
+                f"Agent provider switched to {agent_id}",
                 version=2,
             )
         except Exception as e:
