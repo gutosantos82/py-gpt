@@ -274,6 +274,7 @@ class Plugin(BasePlugin):
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
         app.add_handler(CommandHandler("new", self._on_new))
         app.add_handler(CommandHandler("mode", self._on_mode))
+        app.add_handler(CommandHandler("plugin", self._on_plugin))
 
         # Optionally, you can add a /start or /help command handler
         # from telegram.ext import CommandHandler
@@ -381,6 +382,87 @@ class Plugin(BasePlugin):
             self._call_on_main(lambda: self.window.controller.mode.select(target_mode))
             reply_text = escape_markdown(
                 f"Mode switched to {target_mode}",
+                version=2,
+            )
+        except Exception as e:
+            reply_text = escape_markdown(f"⚠️ Error: {e}", version=2)
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=reply_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            disable_web_page_preview=True,
+        )
+
+    async def _on_plugin(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not update.effective_chat or not update.effective_user:
+            return
+
+        chat_id = update.effective_chat.id
+        user_id = update.effective_user.id
+
+        if self.allowed_users and user_id not in self.allowed_users:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="This bot is locked. Your Telegram user ID is not allowed.",
+            )
+            return
+
+        args = context.args or []
+
+        if len(args) < 2:
+            reply_text = escape_markdown(
+                "Usage: /plugin <enable|disable> <plugin_id>",
+                version=2,
+            )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
+
+        action = args[0].lower()
+        plugin_id = args[1]
+
+        if not self.window.core.plugins.is_registered(plugin_id):
+            reply_text = escape_markdown(
+                f"⚠️ Unknown plugin: {plugin_id}",
+                version=2,
+            )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+            return
+
+        try:
+            if action == "enable":
+                self._call_on_main(lambda: self.window.controller.plugins.enable(plugin_id))
+            elif action == "disable":
+                self._call_on_main(lambda: self.window.controller.plugins.disable(plugin_id))
+            else:
+                reply_text = escape_markdown(
+                    "Usage: /plugin <enable|disable> <plugin_id>",
+                    version=2,
+                )
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=reply_text,
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                    disable_web_page_preview=True,
+                )
+                return
+
+            is_enabled = self._call_on_main(
+                lambda: self.window.controller.plugins.is_enabled(plugin_id)
+            )
+            state = "enabled" if is_enabled else "disabled"
+            reply_text = escape_markdown(
+                f"Plugin {plugin_id} {state}.",
                 version=2,
             )
         except Exception as e:
