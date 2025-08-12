@@ -411,8 +411,10 @@ class Plugin(BasePlugin):
         args = context.args or []
 
         if len(args) < 2:
+            available_plugins = self.window.core.plugins.plugins.keys()
+            plugins_list = ", ".join(available_plugins)
             reply_text = escape_markdown(
-                "Usage: /plugin <enable|disable> <plugin_id>",
+                f"Usage: /plugin <enable|disable> <plugin_id>\nAvailable plugins: {plugins_list}",
                 version=2,
             )
             await context.bot.send_message(
@@ -427,8 +429,10 @@ class Plugin(BasePlugin):
         plugin_id = args[1]
 
         if not self.window.core.plugins.is_registered(plugin_id):
+            available_plugins = self.window.core.plugins.plugins.keys()
+            plugins_list = ", ".join(available_plugins)
             reply_text = escape_markdown(
-                f"⚠️ Unknown plugin: {plugin_id}",
+                f"⚠️ Unknown plugin: {plugin_id}\nAvailable plugins: {plugins_list}",
                 version=2,
             )
             await context.bot.send_message(
