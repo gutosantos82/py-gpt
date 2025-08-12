@@ -42,6 +42,7 @@ from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
+    CommandHandler,
     MessageHandler,
     filters,
 )
@@ -271,6 +272,7 @@ class Plugin(BasePlugin):
 
         # Message handler: plain text only
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
+        app.add_handler(CommandHandler("new", self._on_new))
 
         # Optionally, you can add a /start or /help command handler
         # from telegram.ext import CommandHandler
@@ -293,6 +295,39 @@ class Plugin(BasePlugin):
                 await app.shutdown()
 
     # ---------- Telegram handlers ----------
+
+    async def _on_new(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not update.effective_chat or not update.effective_user:
+            return
+
+        chat_id = update.effective_chat.id
+        user_id = update.effective_user.id
+
+        if self.allowed_users and user_id not in self.allowed_users:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="This bot is locked. Your Telegram user ID is not allowed.",
+            )
+            return
+
+        try:
+            self._call_on_main(lambda: self.window.controller.ctx.new_ungrouped())
+            reply_text = escape_markdown("New context created.", version=2)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
+        except Exception as e:
+            log.exception("Failed to create new context")
+            reply_text = escape_markdown(f"⚠️ Error: {e}", version=2)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=reply_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True,
+            )
 
     async def _on_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not update.effective_chat or not update.effective_user:
