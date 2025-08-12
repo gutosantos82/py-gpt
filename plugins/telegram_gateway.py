@@ -688,6 +688,7 @@ class Plugin(BasePlugin):
         await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
         sent_any = False
+        sent_images: set[str] = set()
         try:
             async for texts, images in self._ask_pygpt(text):
                 log.info("[TelegramGateway] Got reply: %s texts, %s images", len(texts), len(images))
@@ -712,8 +713,11 @@ class Plugin(BasePlugin):
                         disable_web_page_preview=True,
                     )
                 for img_path in images:
-                    sent_any = True
                     img_path = self.window.core.filesystem.to_workdir(img_path)
+                    if img_path in sent_images:
+                        continue
+                    sent_images.add(img_path)
+                    sent_any = True
                     try:
                         if not os.path.exists(img_path):
                             raise FileNotFoundError(f"Missing image: {img_path}")
