@@ -852,7 +852,7 @@ class Plugin(BasePlugin):
                 got_any = True
                 yield new_texts, new_images
 
-            if got_any and kernel.state != kernel.STATE_BUSY:
+            if got_any and kernel.state != kernel.STATE_BUSY and (loop.time() - last_seen) > idle_window:
                 log.info("[TelegramGateway] Kernel not busy; finishing")
                 break
 
