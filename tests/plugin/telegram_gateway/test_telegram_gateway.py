@@ -165,6 +165,37 @@ def test_on_text_forwards_tool_reply(mock_open_fn, mock_exists, mock_window):
     bot.send_photo.assert_called_once()
 
 
+@patch("plugins.telegram_gateway.os.path.exists", return_value=True)
+@patch("plugins.telegram_gateway.open", new_callable=mock_open, read_data=b"data")
+def test_on_text_deduplicates_images(mock_open_fn, mock_exists, mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    async def fake_ask(_):
+        yield ["one"], ["img.png"]
+        yield ["two"], ["img.png"]
+
+    plugin._ask_pygpt = fake_ask
+    mock_window.core.filesystem.to_workdir = lambda x: x
+
+    bot = MagicMock()
+    bot.send_chat_action = AsyncMock()
+    bot.send_message = AsyncMock()
+    bot.send_photo = AsyncMock()
+
+    context = MagicMock()
+    context.bot = bot
+
+    update = MagicMock()
+    update.effective_chat.id = 1
+    update.effective_user.id = 2
+    update.message.text = "hi"
+
+    asyncio.run(plugin._on_text(update, context))
+
+    bot.send_photo.assert_called_once()
+
+
 def test_on_text_ignores_empty_chunks(mock_window):
     with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
