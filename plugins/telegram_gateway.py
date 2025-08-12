@@ -20,6 +20,9 @@ Notes
 - UI options are declared via BasePlugin.add_option and appear under
   “Telegram Gateway” in Plugins → Settings.
 
+- Supports agent modes: watches for `agent_output` contexts and
+  finalizes when `agent_finish` is signaled.
+
 Fill the “ADAPTER” spot below to call PyGPT's chat pipeline. The two
 options shown match the docs pattern; pick whichever matches your build.
 """
@@ -795,9 +798,13 @@ class Plugin(BasePlugin):
                 and last_ctx is not curr_ctx
                 and (
                     getattr(last_ctx, "sub_reply", False)
+                    or getattr(last_ctx, "agent_output", False)
                     or (
                         isinstance(getattr(last_ctx, "extra", None), dict)
-                        and last_ctx.extra.get("sub_reply")
+                        and (
+                            last_ctx.extra.get("sub_reply")
+                            or last_ctx.extra.get("agent_output")
+                        )
                     )
                 )
             ):
@@ -809,6 +816,10 @@ class Plugin(BasePlugin):
             curr_output = getattr(curr_ctx, "output", None)
             curr_results = getattr(curr_ctx, "results", []) or []
             curr_images = getattr(curr_ctx, "images", []) or []
+            curr_extra = getattr(curr_ctx, "extra", {}) or {}
+            agent_finish = (
+                isinstance(curr_extra, dict) and curr_extra.get("agent_finish")
+            )
 
             new_texts: list[str] = []
             new_images: list[str] = []
@@ -839,6 +850,10 @@ class Plugin(BasePlugin):
                 last_seen = loop.time()
                 got_any = True
                 yield new_texts, new_images
+
+            if agent_finish:
+                log.info("[TelegramGateway] Agent signaled finish; exiting")
+                break
 
             if got_any and (loop.time() - last_seen) > idle_window:
                 log.info("[TelegramGateway] Idle window expired; finishing")
