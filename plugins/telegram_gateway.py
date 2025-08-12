@@ -779,7 +779,8 @@ class Plugin(BasePlugin):
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
-        idle_window = 60.0
+        idle_window = 3.0
+        kernel = self.window.controller.kernel
 
         last_seen = loop.time()
         got_any = False
@@ -839,6 +840,10 @@ class Plugin(BasePlugin):
                 last_seen = loop.time()
                 got_any = True
                 yield new_texts, new_images
+
+            if got_any and kernel.state != kernel.STATE_BUSY:
+                log.info("[TelegramGateway] Kernel not busy; finishing")
+                break
 
             if got_any and (loop.time() - last_seen) > idle_window:
                 log.info("[TelegramGateway] Idle window expired; finishing")
