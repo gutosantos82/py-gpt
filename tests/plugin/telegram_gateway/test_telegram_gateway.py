@@ -258,3 +258,37 @@ def test_stop_bot_joins_thread(mock_window):
         plugin._stop_bot()
         assert plugin.state.thread is None
         assert not any(t.name == "tg-gateway" for t in threading.enumerate())
+
+
+def test_on_help_lists_commands(mock_window):
+    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+        plugin = Plugin(window=mock_window)
+
+    bot = MagicMock()
+    bot.send_message = AsyncMock()
+
+    context = MagicMock()
+    context.bot = bot
+
+    update = MagicMock()
+    update.effective_chat.id = 1
+    update.effective_user.id = 2
+
+    asyncio.run(plugin._on_help(update, context))
+
+    expected = escape_markdown(
+        "Supported commands:\n"
+        "/new - start new context\n"
+        "/mode <name> - switch mode\n"
+        "/plugin <enable|disable> <plugin_id> - manage plugins\n"
+        "/model <name> - switch model\n"
+        "/agent <id> - switch agent\n"
+        "/help - show this message",
+        version=2,
+    )
+    bot.send_message.assert_called_once_with(
+        chat_id=1,
+        text=expected,
+        parse_mode=ParseMode.MARKDOWN_V2,
+        disable_web_page_preview=True,
+    )
