@@ -29,8 +29,8 @@ options shown match the docs pattern; pick whichever matches your build.
 
 import asyncio
 import logging
-import threading
 import os
+import threading
 import httpx
 from typing import Optional, AsyncIterator
 
@@ -49,7 +49,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 from telegram.error import TimedOut
-from PySide6.QtCore import QTimer, QObject, Signal
+from PySide6.QtCore import Signal, Slot
 
 from .config import Config
 from .worker import Worker
@@ -58,26 +58,18 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class MainThreadInvoker(QObject):
-    """
-    Helper to marshal callables onto the Qt main thread via a queued signal.
-    """
-    invoke = Signal(object)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.invoke.connect(self._on_invoke)
-
-    def _on_invoke(self, fn):
-        try:
-            fn()
-        except Exception:
-            # The wrapper handles error propagation back to the waiting thread.
-            pass
-
-
 class Plugin(BasePlugin):
     """Telegram gateway plugin"""
+
+    dispatch_event = Signal(object)
+    text_send = Signal(str, bool)
+    ctx_new = Signal()
+    mode_select = Signal(str)
+    model_select = Signal(str)
+    config_set = Signal(str, object)
+    plugin_enable = Signal(str)
+    plugin_disable = Signal(str)
+    plugin_is_enabled = Signal(str, object, object)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,9 +79,19 @@ class Plugin(BasePlugin):
         self.description = "Receive text from Telegram and reply using PyGPT."
         self.worker = None
         self.allowed_users = set()  # optional allowlist by Telegram user id
-        self._invoker = MainThreadInvoker(parent=self.window)
         self.config = Config(self)
         self.init_options()
+
+        # connect helper signals to main-thread slots
+        self.dispatch_event.connect(self._on_dispatch_event)
+        self.text_send.connect(self._on_text_send)
+        self.ctx_new.connect(self._on_ctx_new)
+        self.mode_select.connect(self._on_mode_select)
+        self.model_select.connect(self._on_model_select)
+        self.config_set.connect(self._on_config_set)
+        self.plugin_enable.connect(self._on_plugin_enable)
+        self.plugin_disable.connect(self._on_plugin_disable)
+        self.plugin_is_enabled.connect(self._on_plugin_is_enabled)
 
     def init_options(self):
         """Initialize options"""
@@ -167,72 +169,59 @@ class Plugin(BasePlugin):
         log.info("[TelegramGateway] Telegram bot stopped")
         self.worker = None
 
+    # ---------- Main-thread slots ----------
+
+    @Slot(object)
+    def _on_dispatch_event(self, event):
+        self.window.dispatch(event)
+
+    @Slot(str, bool)
+    def _on_text_send(self, text: str, internal: bool = True):
+        self.window.controller.chat.text.send(text, internal=internal)
+
+    @Slot()
+    def _on_ctx_new(self):
+        self.window.controller.ctx.new_ungrouped()
+
+    @Slot(str)
+    def _on_mode_select(self, mode: str):
+        self.window.controller.mode.select(mode)
+
+    @Slot(str)
+    def _on_model_select(self, model: str):
+        self.window.controller.model.select(model)
+
+    @Slot(str, object)
+    def _on_config_set(self, key: str, value):
+        self.window.core.config.set(key, value)
+
+    @Slot(str)
+    def _on_plugin_enable(self, plugin_id: str):
+        self.window.controller.plugins.enable(plugin_id)
+
+    @Slot(str)
+    def _on_plugin_disable(self, plugin_id: str):
+        self.window.controller.plugins.disable(plugin_id)
+
+    @Slot(str, object, object)
+    def _on_plugin_is_enabled(self, plugin_id: str, result: dict, done: threading.Event):
+        try:
+            result['value'] = self.window.controller.plugins.is_enabled(plugin_id)
+        finally:
+            done.set()
+
     # ---------- Main-thread helpers ----------
-
-    def _call_on_main(self, fn):
-        """
-        Execute callable on the Qt main thread and return its result.
-        Blocks current thread until completion or timeout.
-        """
-        # If already on the main thread, execute directly
-        if threading.current_thread() is threading.main_thread():
-            return fn()
-
-        # If invoker is not available for any reason, fall back (may fail without event loop)
-        if not hasattr(self, "_invoker") or self._invoker is None:
-            done = threading.Event()
-            out = {}
-
-            def wrapper():
-                try:
-                    out["result"] = fn()
-                except Exception as e:
-                    out["error"] = e
-                finally:
-                    done.set()
-
-            QTimer.singleShot(0, wrapper)
-            if not done.wait(timeout=15.0):
-                raise RuntimeError("Main thread call timeout")
-            if "error" in out:
-                raise out["error"]
-            return out.get("result")
-
-        # Normal path: marshal via Qt signal to the main thread
-        done = threading.Event()
-        out = {}
-
-        def wrapper():
-            try:
-                out["result"] = fn()
-            except Exception as e:
-                out["error"] = e
-            finally:
-                done.set()
-
-        # Emit to main thread via queued connection
-        self._invoker.invoke.emit(wrapper)
-
-        # wait up to 15s for the call to complete
-        if not done.wait(timeout=15.0):
-            raise RuntimeError("Main thread call timeout")
-        if "error" in out:
-            raise out["error"]
-        return out.get("result")
 
     def _dispatch_on_main(self, event):
         """Dispatch PyGPT event on the main thread safely."""
         try:
-            self._call_on_main(lambda: self.window.dispatch(event))
+            self.dispatch_event.emit(event)
         except Exception:
             pass
 
     def _text_send_on_main(self, text: str, internal: bool = True):
-        """
-        Call Text.send on the main thread and return ctx.
-        This avoids triggering UI render from a background thread.
-        """
-        return self._call_on_main(lambda: self.window.controller.chat.text.send(text, internal=internal))
+        """Emit text send signal to main thread."""
+        self.text_send.emit(text, internal)
 
     # ---------- Telegram handlers ----------
 
@@ -251,7 +240,7 @@ class Plugin(BasePlugin):
             return
 
         try:
-            self._call_on_main(lambda: self.window.controller.ctx.new_ungrouped())
+            self.ctx_new.emit()
             reply_text = escape_markdown("New context created.", version=2)
             await context.bot.send_message(
                 chat_id=chat_id,
@@ -317,7 +306,7 @@ class Plugin(BasePlugin):
             return
 
         try:
-            self._call_on_main(lambda: self.window.controller.mode.select(target_mode))
+            self.mode_select.emit(target_mode)
             reply_text = escape_markdown(
                 f"Mode switched to {target_mode}",
                 version=2,
@@ -380,7 +369,7 @@ class Plugin(BasePlugin):
             return
 
         try:
-            self._call_on_main(lambda: self.window.controller.model.select(target_model))
+            self.model_select.emit(target_model)
             reply_text = escape_markdown(
                 f"Model switched to {target_model}",
                 version=2,
@@ -494,7 +483,7 @@ class Plugin(BasePlugin):
             return
 
         try:
-            self._call_on_main(lambda: self.window.core.config.set(config_key, agent_id))
+            self.config_set.emit(config_key, agent_id)
             reply_text = escape_markdown(
                 f"Agent provider switched to {agent_id}",
                 version=2,
@@ -560,9 +549,9 @@ class Plugin(BasePlugin):
 
         try:
             if action == "enable":
-                self._call_on_main(lambda: self.window.controller.plugins.enable(plugin_id))
+                self.plugin_enable.emit(plugin_id)
             elif action == "disable":
-                self._call_on_main(lambda: self.window.controller.plugins.disable(plugin_id))
+                self.plugin_disable.emit(plugin_id)
             else:
                 reply_text = escape_markdown(
                     "Usage: /plugin <enable|disable> <plugin_id>",
@@ -576,10 +565,11 @@ class Plugin(BasePlugin):
                 )
                 return
 
-            is_enabled = self._call_on_main(
-                lambda: self.window.controller.plugins.is_enabled(plugin_id)
-            )
-            state = "enabled" if is_enabled else "disabled"
+            result = {}
+            done = threading.Event()
+            self.plugin_is_enabled.emit(plugin_id, result, done)
+            done.wait(timeout=5.0)
+            state = "enabled" if result.get('value') else "disabled"
             reply_text = escape_markdown(
                 f"Plugin {plugin_id} {state}.",
                 version=2,
@@ -698,13 +688,7 @@ class Plugin(BasePlugin):
             pass
 
         # Initiate the chat turn via the Text controller
-        try:
-            loop = asyncio.get_running_loop()
-            ctx = await loop.run_in_executor(
-                None, lambda: self._text_send_on_main(user_text, internal=True)
-            )
-        except Exception as e:
-            raise RuntimeError(f"Bridge call failed: {e}")
+        self._text_send_on_main(user_text, internal=True)
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 120.0  # seconds
@@ -713,10 +697,10 @@ class Plugin(BasePlugin):
 
         last_seen = loop.time()
         got_any = False
-        curr_ctx = ctx
-        prev_output = getattr(curr_ctx, "output", None)
-        prev_results_len = len(getattr(curr_ctx, "results", []) or [])
-        prev_images_len = len(getattr(curr_ctx, "images", []) or [])
+        curr_ctx = self.window.core.ctx.get_last_item()
+        prev_output = getattr(curr_ctx, "output", None) if curr_ctx else None
+        prev_results_len = len(getattr(curr_ctx, "results", []) or []) if curr_ctx else 0
+        prev_images_len = len(getattr(curr_ctx, "images", []) or []) if curr_ctx else 0
 
         while loop.time() < deadline:
             last_ctx = self.window.core.ctx.get_last_item()
