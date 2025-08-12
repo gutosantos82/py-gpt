@@ -32,9 +32,7 @@ import logging
 import threading
 import os
 import httpx
-from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator
-from contextlib import suppress
 
 from pygpt_net.core.events import Event  # event enum (docs list the names)
 from pygpt_net.plugin.base.plugin import BasePlugin
@@ -48,31 +46,16 @@ from pygpt_net.core.types import (
 # Telegram (python-telegram-bot v20+)
 from telegram import Update
 from telegram.constants import ParseMode
-from telegram.ext import (
-    ApplicationBuilder,
-    ContextTypes,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 from telegram.error import TimedOut
 from PySide6.QtCore import QTimer, QObject, Signal
 
 from .config import Config
+from .worker import Worker
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
-
-
-@dataclass
-class _BotState:
-    token: Optional[str] = None
-    app_task: Optional[asyncio.Task] = None
-    loop: Optional[asyncio.AbstractEventLoop] = None
-    thread: Optional[threading.Thread] = None
-    tg_app: Optional["telegram.ext.Application"] = None  # type: ignore
-    stop_event: threading.Event = field(default_factory=threading.Event)
 
 
 class MainThreadInvoker(QObject):
@@ -102,7 +85,7 @@ class Plugin(BasePlugin):
         self.name = "Telegram Gateway"
         self.version = "1.0.0"
         self.description = "Receive text from Telegram and reply using PyGPT."
-        self.state = _BotState()  # runtime TG state
+        self.worker = None
         self.allowed_users = set()  # optional allowlist by Telegram user id
         self._invoker = MainThreadInvoker(parent=self.window)
         self.config = Config(self)
@@ -155,48 +138,34 @@ class Plugin(BasePlugin):
             log.warning("[TelegramGateway] Bot token is empty; not starting.")
             return
 
-        self.state.stop_event.clear()
+        try:
+            worker = Worker()
+            worker.from_defaults(self)
+            worker.token = token
 
-        def _runner():
-            self.state.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.state.loop)
-            self.state.loop.run_until_complete(self._tg_main(token))
+            worker.signals.started.connect(self.handle_started)
+            worker.signals.stopped.connect(self.handle_stop)
 
-        self.state.thread = threading.Thread(target=_runner, name="tg-gateway", daemon=True)
-        self.state.thread.start()
-        log.info("[TelegramGateway] Telegram bot started")
+            self.worker = worker
+            worker.run_async()
+        except Exception as e:
+            self.error(e)
 
     def _stop_bot(self):
-        self.state.stop_event.set()
-        if self.state.loop and self.state.tg_app:
-            log.info("[TelegramGateway] Stopping Telegram bot...")
-            loop = self.state.loop
-            app = self.state.tg_app
-            try:
-                async def _shutdown():
-                    with suppress(RuntimeError):
-                        await app.updater.stop()
-                    with suppress(RuntimeError):
-                        await app.stop()
-                    with suppress(RuntimeError):
-                        await app.shutdown()
-
-                asyncio.run_coroutine_threadsafe(_shutdown(), loop).result(timeout=10)
-            except Exception as e:
-                log.debug("shutdown exception: %s", e)
-
-        thread = self.state.thread
-        if thread and thread.is_alive():
-            thread.join(timeout=10)
-
-        self.state.tg_app = None
-        self.state.loop = None
-        self.state.thread = None
-        log.info("[TelegramGateway] Telegram bot stopped")
+        if self.worker is not None:
+            self.worker.stop()
+            self.worker = None
 
     def _restart_bot(self):
         self._stop_bot()
         self._start_bot()
+
+    def handle_started(self):
+        log.info("[TelegramGateway] Telegram bot started")
+
+    def handle_stop(self):
+        log.info("[TelegramGateway] Telegram bot stopped")
+        self.worker = None
 
     # ---------- Main-thread helpers ----------
 
@@ -264,43 +233,6 @@ class Plugin(BasePlugin):
         This avoids triggering UI render from a background thread.
         """
         return self._call_on_main(lambda: self.window.controller.chat.text.send(text, internal=internal))
-
-    async def _tg_main(self, token: str):
-        app = (
-            ApplicationBuilder()
-                .token(token)
-                .read_timeout(30)
-                .build()
-        )
-
-        # Message handler: plain text only
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
-        app.add_handler(CommandHandler("new", self._on_new))
-        app.add_handler(CommandHandler("mode", self._on_mode))
-        app.add_handler(CommandHandler("plugin", self._on_plugin))
-        app.add_handler(CommandHandler("model", self._on_model))
-        app.add_handler(CommandHandler("help", self._on_help))
-        app.add_handler(CommandHandler("agent", self._on_agent))
-
-        # Optionally, you can add a /start or /help command handler
-        # from telegram.ext import CommandHandler
-        # app.add_handler(CommandHandler("start", self._on_start))
-
-        await app.initialize()
-        self.state.tg_app = app
-        await app.start()
-        # Idle loop (non-blocking because we run in a thread)
-        try:
-            await app.updater.start_polling()
-            while not self.state.stop_event.is_set():
-                await asyncio.sleep(0.25)
-        finally:
-            with suppress(RuntimeError):
-                await app.updater.stop()
-            with suppress(RuntimeError):
-                await app.stop()
-            with suppress(RuntimeError):
-                await app.shutdown()
 
     # ---------- Telegram handlers ----------
 
