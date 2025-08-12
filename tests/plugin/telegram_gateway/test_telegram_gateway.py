@@ -16,7 +16,7 @@ from telegram.constants import ParseMode
 
 from pygpt_net.item.ctx import CtxItem
 from pygpt_net.config import Config
-from plugins.telegram_gateway import Plugin
+from pygpt_net.plugin.telegram_gateway import Plugin
 import pytest
 
 
@@ -59,7 +59,7 @@ def mock_window():
 
 
 def test_ask_pygpt_monitors_sub_reply(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     initial = CtxItem()
@@ -84,7 +84,7 @@ def test_ask_pygpt_monitors_sub_reply(mock_window):
     mock_window.core.ctx.get_last_item = get_last_item
 
     async def run():
-        with patch("plugins.telegram_gateway.asyncio.sleep", new=AsyncMock()):
+        with patch("pygpt_net.plugin.telegram_gateway.plugin.asyncio.sleep", new=AsyncMock()):
             agen = plugin._ask_pygpt("test")
             texts, images = await asyncio.wait_for(anext(agen), timeout=1)
             await agen.aclose()
@@ -96,7 +96,7 @@ def test_ask_pygpt_monitors_sub_reply(mock_window):
 
 
 def test_ask_pygpt_monitors_extra_sub_reply(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     initial = CtxItem()
@@ -121,7 +121,7 @@ def test_ask_pygpt_monitors_extra_sub_reply(mock_window):
     mock_window.core.ctx.get_last_item = get_last_item
 
     async def run():
-        with patch("plugins.telegram_gateway.asyncio.sleep", new=AsyncMock()):
+        with patch("pygpt_net.plugin.telegram_gateway.plugin.asyncio.sleep", new=AsyncMock()):
             agen = plugin._ask_pygpt("test")
             texts, images = await asyncio.wait_for(anext(agen), timeout=1)
             await agen.aclose()
@@ -133,7 +133,7 @@ def test_ask_pygpt_monitors_extra_sub_reply(mock_window):
 
 
 def test_ask_pygpt_monitors_agent_output(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     initial = CtxItem()
@@ -158,7 +158,7 @@ def test_ask_pygpt_monitors_agent_output(mock_window):
     mock_window.core.ctx.get_last_item = get_last_item
 
     async def run():
-        with patch("plugins.telegram_gateway.asyncio.sleep", new=AsyncMock()):
+        with patch("pygpt_net.plugin.telegram_gateway.plugin.asyncio.sleep", new=AsyncMock()):
             agen = plugin._ask_pygpt("test")
             texts, images = await asyncio.wait_for(anext(agen), timeout=1)
             await agen.aclose()
@@ -169,10 +169,10 @@ def test_ask_pygpt_monitors_agent_output(mock_window):
     assert images == ["img.png"]
 
 
-@patch("plugins.telegram_gateway.os.path.exists", return_value=True)
-@patch("plugins.telegram_gateway.open", new_callable=mock_open, read_data=b"data")
+@patch("pygpt_net.plugin.telegram_gateway.plugin.os.path.exists", return_value=True)
+@patch("pygpt_net.plugin.telegram_gateway.plugin.open", new_callable=mock_open, read_data=b"data")
 def test_on_text_forwards_tool_reply(mock_open_fn, mock_exists, mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     async def fake_ask(_):
@@ -205,10 +205,10 @@ def test_on_text_forwards_tool_reply(mock_open_fn, mock_exists, mock_window):
     bot.send_photo.assert_called_once()
 
 
-@patch("plugins.telegram_gateway.os.path.exists", return_value=True)
-@patch("plugins.telegram_gateway.open", new_callable=mock_open, read_data=b"data")
+@patch("pygpt_net.plugin.telegram_gateway.plugin.os.path.exists", return_value=True)
+@patch("pygpt_net.plugin.telegram_gateway.plugin.open", new_callable=mock_open, read_data=b"data")
 def test_on_text_deduplicates_images(mock_open_fn, mock_exists, mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     async def fake_ask(_):
@@ -237,7 +237,7 @@ def test_on_text_deduplicates_images(mock_open_fn, mock_exists, mock_window):
 
 
 def test_on_text_ignores_empty_chunks(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     async def fake_ask(_):
@@ -268,7 +268,7 @@ def test_on_text_ignores_empty_chunks(mock_window):
 
 
 def test_on_text_no_response_when_all_empty(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     async def fake_ask(_):
@@ -299,7 +299,7 @@ def test_on_text_no_response_when_all_empty(mock_window):
 
 
 def test_stop_bot_joins_thread(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     plugin.options["bot_token"]["value"] = "123"
@@ -332,7 +332,7 @@ def test_stop_bot_joins_thread(mock_window):
 
 
 def test_on_help_lists_commands(mock_window):
-    with patch("plugins.telegram_gateway.MainThreadInvoker", DummyInvoker):
+    with patch("pygpt_net.plugin.telegram_gateway.plugin.MainThreadInvoker", DummyInvoker):
         plugin = Plugin(window=mock_window)
 
     bot = MagicMock()
