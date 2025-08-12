@@ -12,7 +12,7 @@ logging.basicConfig( level=logging.INFO, format="%(asctime)s %(levelname)s [%(na
 
 
 from pygpt_net.app import run
-from plugins.telegram_gateway import Plugin as TelegramGatewayPlugin
+from pygpt_net.plugin.telegram_gateway import Plugin as TelegramGatewayPlugin
 
 if __name__ == "__main__":
     plugins = [TelegramGatewayPlugin()]
