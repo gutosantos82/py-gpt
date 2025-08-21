@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 19:00:00                  #
+# Updated Date: 2025.08.12 19:00:00                  #
 # ================================================== #
 
 from dataclasses import dataclass
@@ -97,42 +97,6 @@ class Agent(BaseAgent):
         )
         agent_kwargs.update(tool_kwargs) # update kwargs with tools
         return OpenAIAgent(**agent_kwargs)
-
-    def get_expert(
-            self,
-            window,
-            prompt: str,
-            model: ModelItem,
-            preset: PresetItem = None,
-            tools: list = None,
-    ) -> OpenAIAgent:
-        """
-        Return Agent provider instance
-
-        :param window: window instance
-        :param prompt: Expert prompt
-        :param model: Model item
-        :param preset: Preset item
-        :param tools: List of function tools
-        :return: Agent provider instance
-        """
-        agent_name = preset.name if preset else "Agent"
-        kwargs = {
-            "name": agent_name,
-            "instructions": prompt,
-            "model": model.id,
-        }
-        tool_kwargs = append_tools(
-            tools=tools,
-            window=window,
-            model=model,
-            preset=preset,
-            allow_local_tools=True,
-            allow_remote_tools=True,
-            is_expert_call=True,
-        )
-        kwargs.update(tool_kwargs)  # update kwargs with tools
-        return OpenAIAgent(**kwargs)
 
     def get_evaluator(
             self,
@@ -274,10 +238,29 @@ class Agent(BaseAgent):
 
                 print(f"Evaluator score: {result.score}")
                 if result.score == "pass":
-                    print("Response is good enough, exiting.")
+                    if use_partial_ctx:
+                        ctx = bridge.on_next_ctx(
+                            ctx=ctx,
+                            input=result.feedback,  # new ctx: input
+                            output=final_output,  # prev ctx: output
+                            response_id=response_id,
+                            finish=True,
+                            stream=False,
+                        )
+                    else:
+                        print("Response is good enough, exiting.")
                     break
                 print("Re-running with feedback")
                 input_items.append({"content": f"Feedback: {result.feedback}", "role": "user"})
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input=result.feedback, # new ctx: input
+                        output=final_output,  # prev ctx: output
+                        response_id=response_id,
+                        stream=False,
+                    )
         else:
             handler = StreamHandler(window, bridge)
             while True:
@@ -289,6 +272,7 @@ class Agent(BaseAgent):
                 handler.reset()
                 async for event in result.stream_events():
                     if bridge.stopped():
+                        result.cancel()
                         bridge.on_stop(ctx)
                         break
                     final_output, response_id = handler.handle(event, ctx)
@@ -314,6 +298,7 @@ class Agent(BaseAgent):
                             output=final_output,  # prev ctx: output
                             response_id=response_id,
                             finish=True,
+                            stream=True,
                         )
                     else:
                         ctx.stream = info
@@ -330,6 +315,7 @@ class Agent(BaseAgent):
                         input=result.feedback,  # new ctx: input
                         output=final_output,  # prev ctx: output
                         response_id=response_id,
+                        stream=True,
                     )
                     handler.new()
                 else:

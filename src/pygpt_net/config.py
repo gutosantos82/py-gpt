@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.07.21 15:00:00                  #
+# Updated Date: 2025.08.18 01:00:00                  #
 # ================================================== #
 
 import copy
@@ -16,10 +16,14 @@ import re
 
 from pathlib import Path
 from packaging.version import Version
+from operator import itemgetter
 
 from pygpt_net.core.profile import Profile
 from pygpt_net.provider.core.config.json_file import JsonFileProvider
 from pygpt_net.core.types.console import Color
+
+_RE_VERSION = re.compile(r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]')
+_RE_BUILD = re.compile(r'__build__\s*=\s*[\'"]([^\'"]*)[\'"]')
 
 
 class Config:
@@ -46,9 +50,9 @@ class Config:
         self.initialized_base = False
         self.initialized_workdir = False
         self.db_echo = False
-        self.data = {}  # user config
-        self.data_base = {}  # base config
-        self.data_session = {}  # temporary config (session only)
+        self.data = {}
+        self.data_base = {}
+        self.data_session = {}
         self.version = version
         self.dirs = {
             "capture": "capture",
@@ -63,6 +67,9 @@ class Config:
             "upload": "upload",
             "tmp": "tmp",
         }
+        self._app_path = None
+        self._version_cache = version if version else None
+        self._build_cache = None
         self.provider = JsonFileProvider(window)
         self.provider.path_app = self.get_app_path()
         self.provider.meta = self.append_meta()
@@ -81,10 +88,8 @@ class Config:
 
     def install(self):
         """Install database and provider data"""
-        self.window.core.db.echo = self.db_echo  # verbose on/off
+        self.window.core.db.echo = self.db_echo
         self.window.core.db.init()
-
-        # install provider configs
         self.provider.install()
 
     def get_path(self) -> str:
@@ -107,16 +112,14 @@ class Config:
         """
         # 1) Explicit override via env takes precedence
         if "PYGPT_WORKDIR" in os.environ and os.environ["PYGPT_WORKDIR"] != "":
-            workdir = os.environ["PYGPT_WORKDIR"]
-            print("FORCE using workdir: {}".format(workdir))
-            # convert relative path to absolute path if needed
-            if not os.path.isabs(workdir):
-                path = os.path.join(os.getcwd(), workdir)
+            print(f"FORCE using workdir: {os.environ['PYGPT_WORKDIR']}")
+            if not os.path.isabs(os.environ["PYGPT_WORKDIR"]):
+                path = os.path.join(os.getcwd(), os.environ["PYGPT_WORKDIR"])
             else:
                 path = workdir
             if not os.path.exists(path):
-                print("Workdir path not exists: {}".format(path))
-                print("Creating workdir path: {}".format(path))
+                print(f"Workdir path not exists: {path}")
+                print(f"Creating workdir path: {path}")
                 os.makedirs(path, exist_ok=True)
             return path
 
@@ -139,31 +142,22 @@ class Config:
         """
         is_test = os.environ.get('ENV_TEST') == '1'
         path = Path(Config.get_base_workdir())
-
-        # Ensure the base workdir exists in all environments (test and non-test)
-        if not path.exists():
+        if not path.exists() and not is_test:
             path.mkdir(parents=True, exist_ok=True)
-
-        p = os.path.join(str(path), "path.cfg")
-
-        if os.path.exists(p):
-            # Only try to read if file exists
-            try:
-                with open(p, 'r', encoding='utf-8') as f:
-                    tmp_path = f.read().strip()
-                if tmp_path:
-                    tmp_path = tmp_path.replace("%HOME%", str(Path.home()))
-                    if os.path.exists(tmp_path):
-                        path = Path(tmp_path)
-                    else:
-                        print("CRITICAL: Workdir path not exists: {}".format(tmp_path))
-            except Exception as e:
-                print(f"Warning reading workdir file: {e}")
-        else:
-            # Create an empty path.cfg to allow user override later (also in tests)
+        path_file = "path.cfg"
+        p = os.path.join(str(path), path_file)
+        if not os.path.exists(p) and not is_test:
             with open(p, 'w', encoding='utf-8') as f:
                 f.write("")
-
+        else:
+            with open(p, 'r', encoding='utf-8') as f:
+                tmp_path = f.read().strip()
+            if tmp_path:
+                tmp_path = tmp_path.replace("%HOME%", str(Path.home()))
+                if os.path.exists(tmp_path):
+                    path = Path(tmp_path)
+                else:
+                    print(f"CRITICAL: Workdir path not exists: {tmp_path}")
         return str(path)
 
     def set_workdir(self, path: str, reload: bool = False):
@@ -175,6 +169,7 @@ class Config:
         """
         self.path = path
         self.provider.path = path
+        self.initialized_workdir = True
         if reload:
             self.initialized = False
             self.init(True)
@@ -196,9 +191,9 @@ class Config:
         :return: user dir
         """
         if dir not in self.dirs:
-            raise Exception('Unknown dir: {}'.format(dir))
+            raise Exception(f'Unknown dir: {dir}')
 
-        dir_data_allowed = ["img", "capture", "upload"]
+        dir_data_allowed = ("img", "capture", "upload")
 
         if self.has("upload.data_dir") \
                 and self.get("upload.data_dir") \
@@ -206,8 +201,7 @@ class Config:
             path = os.path.join(self.get_user_path(), self.dirs["data"], self.dirs[dir])
         else:
             path = os.path.join(self.get_user_path(), self.dirs[dir])
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
 
         return path
 
@@ -228,10 +222,13 @@ class Config:
 
         :return: app root path
         """
-        if self.is_compiled():  # if compiled with pyinstaller
-            return os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+        if hasattr(self, '_app_path') and self._app_path is not None:
+            return self._app_path
+        if self.is_compiled():
+            self._app_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
         else:
-            return os.path.abspath(os.path.dirname(__file__))
+            self._app_path = os.path.abspath(os.path.dirname(__file__))
+        return self._app_path
 
     def get_user_path(self) -> str:
         """
@@ -249,16 +246,15 @@ class Config:
         """
         if not self.initialized:
 
-            # if app initialization
             if all:
                 v = self.get_version()
                 build = self.get_build().replace('.', '-')
-                os = self.window.core.platforms.get_os()
+                os_name = self.window.core.platforms.get_os()
                 architecture = self.window.core.platforms.get_architecture()
 
                 print("===================================================")
-                print(f" {Color.BOLD}PyGPT    {v}{Color.ENDC} build {build} ({os}, {architecture})")
-                print(" Author:  Marcin Szczyglinski")
+                print(f" {Color.BOLD}PyGPT    {v}{Color.ENDC} build {build} ({os_name}, {architecture})")
+                print(" Author:  Marcin Szczygliński")
                 print(" GitHub:  https://github.com/szczyglis-dev/py-gpt")
                 print(" Website: https://pygpt.net")
                 print(" Email:   info@pygpt.net")
@@ -266,7 +262,6 @@ class Config:
                 print("")
                 print(f"{Color.BOLD}Initializing...{Color.ENDC}")
 
-                # prepare and install
                 self.window.core.installer.install()
 
             self.load(all)
@@ -278,17 +273,20 @@ class Config:
 
         :return: version string
         """
+        if hasattr(self, '_version_cache') and self._version_cache is not None:
+            return self._version_cache
         path = os.path.abspath(os.path.join(self.get_app_path(), '__init__.py'))
         try:
             with open(path, 'r', encoding="utf-8") as f:
                 data = f.read()
-                result = re.search(r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format("__version__"), data)
-                return result.group(1)
+                result = _RE_VERSION.search(data)
+                self._version_cache = result.group(1)
+                return self._version_cache
         except Exception as e:
             if self.window is not None:
                 self.window.core.debug.log(e)
             else:
-                print("Error loading version file: {}".format(e))
+                print(f"Error loading version file: {e}")
 
     def get_build(self) -> str:
         """
@@ -296,17 +294,20 @@ class Config:
 
         :return: build string
         """
+        if self._build_cache is not None:
+            return self._build_cache
         path = os.path.abspath(os.path.join(self.get_app_path(), '__init__.py'))
         try:
             with open(path, 'r', encoding="utf-8") as f:
                 data = f.read()
-                result = re.search(r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format("__build__"), data)
-                return result.group(1)
+                result = _RE_BUILD.search(data)
+                self._build_cache = result.group(1)
+                return self._build_cache
         except Exception as e:
             if self.window is not None:
                 self.window.core.debug.log(e)
             else:
-                print("Error loading version file: {}".format(e))
+                print(f"Error loading version file: {e}")
 
     def get_options(self) -> dict:
         """
@@ -332,9 +333,7 @@ class Config:
         :param default: default value
         :return: value
         """
-        if key in self.data:
-            return self.data[key]
-        return default
+        return self.data.get(key, default)
 
     def get_session(self, key: str, default: any = None) -> any:
         """
@@ -344,9 +343,7 @@ class Config:
         :param default: default value
         :return: value
         """
-        if key in self.data_session:
-            return self.data_session[key]
-        return default
+        return self.data_session.get(key, default)
 
     def get_lang(self) -> str:
         """
@@ -354,7 +351,7 @@ class Config:
 
         :return: language code
         """
-        test_lang = os.environ.get('TEST_LANGUAGE')  # if pytest
+        test_lang = os.environ.get('TEST_LANGUAGE')
         if test_lang:
             return test_lang
         return self.get('lang', 'en')
@@ -384,12 +381,7 @@ class Config:
         :param key: key
         :return: True if exists
         """
-        if self.data is None:
-            return False
-
-        if key in self.data:
-            return True
-        return False
+        return key in self.data
 
     def has_session(self, key: str) -> bool:
         """
@@ -398,9 +390,7 @@ class Config:
         :param key: key
         :return: True if exists
         """
-        if key in self.data_session:
-            return True
-        return False
+        return key in self.data_session
 
     def all(self) -> dict:
         """
@@ -424,32 +414,21 @@ class Config:
 
         :return: list with available languages (user + app)
         """
-        langs = []
-        path = os.path.join(self.get_app_path(), 'data', 'locale')
-        if os.path.exists(path):
-            for file in os.listdir(path):
+        langs_set = set()
+        path_app = os.path.join(self.get_app_path(), 'data', 'locale')
+        if os.path.exists(path_app):
+            for file in os.listdir(path_app):
                 if file.startswith('locale.') and file.endswith(".ini"):
-                    lang_id = file.replace('locale.', '').replace('.ini', '')
-                    if lang_id not in langs:
-                        langs.append(lang_id)
-
-        path = os.path.join(self.get_user_path(), 'locale')
-        if os.path.exists(path):
-            for file in os.listdir(path):
+                    langs_set.add(file.replace('locale.', '').replace('.ini', ''))
+        path_user = os.path.join(self.get_user_path(), 'locale')
+        if os.path.exists(path_user):
+            for file in os.listdir(path_user):
                 if file.startswith('locale.') and file.endswith(".ini"):
-                    lang_id = file.replace('locale.', '').replace('.ini', '')
-                    if lang_id not in langs:
-                        langs.append(lang_id)
-
-        # sort by name
-        langs.sort()
-
-        # make English first
+                    langs_set.add(file.replace('locale.', '').replace('.ini', ''))
+        langs = sorted(langs_set)
         if 'en' in langs:
             langs.remove('en')
             langs.insert(0, 'en')
-
-        # make Polish second
         if 'pl' in langs:
             langs.remove('pl')
             langs.insert(1, 'pl')
@@ -489,7 +468,7 @@ class Config:
         """
         self.data = self.provider.load(all)
         if self.data is not None:
-            self.data = dict(sorted(self.data.items(), key=lambda item: item[0]))  # sort by key
+            self.data = dict(sorted(self.data.items(), key=itemgetter(0)))
 
     def load_base_config(self):
         """
@@ -497,7 +476,7 @@ class Config:
         """
         self.data_base = self.provider.load_base()
         if self.data_base is not None:
-            self.data_base = dict(sorted(self.data_base.items(), key=lambda item: item[0]))  # sort by key
+            self.data_base = dict(sorted(self.data_base.items(), key=itemgetter(0)))
             self.initialized_base = True
 
     def from_base_config(self):
@@ -563,17 +542,18 @@ class Config:
         if "app.env" not in self.data or not isinstance(self.data["app.env"], list):
             return
         list_loaded = []
+        conf = self.all()
         for item in self.data["app.env"]:
             if item['name'] is None or item['name'] == "":
                 continue
             try:
-                value = str(item['value'].format(**self.all()))
+                value = str(item['value'].format(**conf))
                 os.environ[item['name']] = value
                 list_loaded.append(item['name'])
             except Exception as e:
-                print("Error setting env var: {}".format(e))
+                print(f"Error setting env var: {e}")
         if list_loaded:
-            print("Setting environment vars: {}".format(", ".join(list_loaded)))
+            print(f"Setting environment vars: {', '.join(list_loaded)}")
 
     def save(self, filename: str = "config.json"):
         """

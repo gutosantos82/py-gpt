@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2024.12.09 23:00:00                  #
+# Updated Date: 2025.08.20 23:00:00                  #
 # ================================================== #
 
 from pygpt_net.controller.access import Access
@@ -39,6 +39,8 @@ from pygpt_net.controller.settings import Settings
 from pygpt_net.controller.theme import Theme
 from pygpt_net.controller.tools import Tools
 from pygpt_net.controller.ui import UI
+from pygpt_net.utils import mem_clean
+
 
 class Controller:
     def __init__(self, window=None):
@@ -145,6 +147,12 @@ class Controller:
         """Reload components"""
         self.reloading = True  # lock
 
+        print("Reloading components... please wait...")
+
+        mem_clean()  # try to clean memory
+
+        prev_theme = self.window.core.config.get("theme")
+
         self.window.core.reload()  # db, config, patch, etc.
         self.ui.tabs.reload()
         self.ctx.reload()
@@ -160,18 +168,19 @@ class Controller:
         self.notepad.reload()
         self.files.reload()
         self.lang.reload()
-        self.theme.reload_all()
         self.debug.reload()
         self.chat.reload()
         self.window.tools.on_reload()
         self.access.reload()
         self.tools.reload()
-        # self.layout.reload()
 
         # post-reload
         self.ui.tabs.reload_after()
         self.ctx.reload_after()
         self.ui.tabs.restore_data()  # restore opened tabs data
         self.kernel.restart()
+        self.theme.reload_all(prev_theme=prev_theme)  # do not reload theme if no change
 
         self.reloading = False  # unlock
+
+        print("[OK] Components reloaded successfully.")

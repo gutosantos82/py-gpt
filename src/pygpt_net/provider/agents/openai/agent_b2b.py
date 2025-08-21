@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 19:00:00                  #
+# Updated Date: 2025.08.12 19:00:00                  #
 # ================================================== #
 
 import copy
@@ -92,6 +92,24 @@ class Agent(BaseAgent):
         )
         kwargs.update(tool_kwargs) # update kwargs with tools
         return OpenAIAgent(**kwargs)
+
+    def reverse_history(
+            self,
+            items: list[TResponseInputItem]
+    ):
+        """
+        Reverse the roles of items in the input list in history (assistant to user)
+
+        :param items: List of input items
+        :return: List of input items with reversed roles
+        """
+        counter = 1
+        for item in items:
+            if item.get("role") == "assistant":
+                if counter % 2 == 0:
+                    item["role"] = "user"
+                counter += 1
+        return items
 
     def reverse_items(
             self,
@@ -236,6 +254,10 @@ class Agent(BaseAgent):
         }
         input_items: list[TResponseInputItem] = messages
 
+        # reverse history if needed
+        if use_partial_ctx:
+            input_items = self.reverse_history(input_items)
+
         if not stream:
             while True:
                 # -------- bot 1 --------
@@ -250,6 +272,7 @@ class Agent(BaseAgent):
                     **kwargs
                 )
                 response_id = result.last_response_id
+                output_1 = final_output
                 if verbose:
                     print("Final response:", result)
 
@@ -262,6 +285,15 @@ class Agent(BaseAgent):
                 # get and reverse items
                 input_items = result.to_input_list()
                 input_items = self.reverse_items(input_items, verbose=reverse_verbose)
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input="",  # new ctx: input
+                        output=output_1,  # prev ctx: output
+                        response_id=response_id,
+                        stream=False,
+                    )
 
                 # -------- bot 2 --------
                 kwargs["input"] = input_items
@@ -271,6 +303,7 @@ class Agent(BaseAgent):
                     **kwargs
                 )
                 response_id = result.last_response_id
+                output_2 = final_output
                 if verbose:
                     print("Final response:", result)
 
@@ -282,17 +315,17 @@ class Agent(BaseAgent):
                 # get and reverse items
                 input_items = result.to_input_list()
                 input_items = self.reverse_items(input_items, verbose=reverse_verbose)
+
+                if use_partial_ctx:
+                    ctx = bridge.on_next_ctx(
+                        ctx=ctx,
+                        input="", # new ctx: input
+                        output=output_2,  # prev ctx: output
+                        response_id=response_id,
+                        stream=False,
+                    )
         else:
             handler = StreamHandler(window, bridge)
-            if use_partial_ctx:
-                # we must replace message roles at beginning, second bot will be user
-                msg_counter = 1
-                for item in input_items:
-                    if item.get("role") == "assistant":
-                        if msg_counter % 2 == 0:
-                            item["role"] = "user"
-                        msg_counter += 1
-
             begin = True
             while True:
                 # -------- bot 1 --------
@@ -315,6 +348,7 @@ class Agent(BaseAgent):
                     handler.to_buffer(title)
                 async for event in result.stream_events():
                     if bridge.stopped():
+                        result.cancel()
                         bridge.on_stop(ctx)
                         break
                     final_output, response_id = handler.handle(event, ctx)
@@ -335,6 +369,7 @@ class Agent(BaseAgent):
                         input="",  # new ctx: input
                         output=output_1,  # prev ctx: output
                         response_id=response_id,
+                        stream=True,
                     )
                     handler.new()
                 else:
@@ -357,6 +392,7 @@ class Agent(BaseAgent):
                     handler.to_buffer(title)
                 async for event in result.stream_events():
                     if bridge.stopped():
+                        result.cancel()
                         bridge.on_stop(ctx)
                         break
                     final_output, response_id = handler.handle(event, ctx)
@@ -377,6 +413,7 @@ class Agent(BaseAgent):
                         input="", # new ctx: input
                         output=output_2,  # prev ctx: output
                         response_id=response_id,
+                        stream=True,
                     )
                     handler.new()
                 else:

@@ -6,16 +6,17 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.07.18 00:00:00                  #
+# Updated Date: 2025.08.20 23:00:00                  #
 # ================================================== #
 
 import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, QTimer
 from PySide6.QtGui import QAction
 
+from pygpt_net.core.types import MODE_CHAT
 from pygpt_net.utils import trans
 
 
@@ -52,7 +53,8 @@ class Profile:
             self,
             uuid: str,
             force: bool = False,
-            save_current: bool = True
+            save_current: bool = True,
+            on_finish: Optional[callable] = None
     ):
         """
         Switch profile
@@ -60,6 +62,7 @@ class Profile:
         :param uuid: Profile UUID
         :param force: Force switch
         :param save_current: Save current profile
+        :param on_finish: Callback function to call after switch
         """
         current = self.window.core.config.profile.get_current()
         if uuid == current and not force:
@@ -84,7 +87,7 @@ class Profile:
             self.window.controller.settings.workdir.update(
                 path,
                 force=True,
-                profile_name= profile['name']
+                profile_name=profile['name']
             )  # self.after_update() is called in update worker on success
         else:
             self.after_update(profile['name'])
@@ -103,6 +106,7 @@ class Profile:
         self.update_list()
         self.window.ui.update_title()
         self.window.update_status(trans("dialog.profile.status.changed") + ": " + name)
+        self.window.ui.dialogs.close('profile.item')
         self.select_current_on_list()
 
     def select_current_on_list(self):
@@ -224,7 +228,8 @@ class Profile:
             uuid = self.window.core.config.profile.add(name, path)
             self.window.update_status(trans("dialog.profile.status.created"))
             if self.window.ui.nodes['dialog.profile.checkbox.switch'].isChecked():
-                self.switch(uuid, force=True)
+                QTimer.singleShot(100, lambda: self.after_create(uuid))
+                return
 
         elif mode == 'edit':
             # update profile
@@ -283,6 +288,26 @@ class Profile:
         self.window.ui.dialogs.close('profile.item')
         self.update_menu()
         self.update_list()
+
+    def after_create(self, uuid: str):
+        """
+        After profile creation
+
+        :param uuid: profile UUID
+        """
+        self.switch(uuid, force=True, on_finish=self.after_create_finish)
+
+    def after_create_finish(self, uuid: str):
+        """
+        After profile creation
+
+        :param uuid: profile UUID
+        """
+        self.window.ui.dialogs.close('profile.item')
+        self.update_menu()
+        self.update_list()
+        self.window.ui.update_title()
+        self.window.controller.mode.select(MODE_CHAT)
 
     def dismiss_update(self):
         """Dismiss update dialog"""

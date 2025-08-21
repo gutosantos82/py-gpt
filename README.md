@@ -2,7 +2,7 @@
 
 [![pygpt](https://snapcraft.io/pygpt/badge.svg)](https://snapcraft.io/pygpt)
 
-Release: **2.5.98** | build: **2025-08-12** | Python: **>=3.10, <3.14**
+Release: **2.6.17** | build: **2025-08-21** | Python: **>=3.10, <3.14**
 
 > Official website: https://pygpt.net | Documentation: https://pygpt.readthedocs.io
 > 
@@ -414,7 +414,7 @@ Above where you type your messages, the interface shows you the number of tokens
 
 ![v2_mode_chat](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v2_mode_chat.png)
 
-**Vision:** If you want to send photos from your disk or images from your camera for analysis, and the selected model does not support Vision, you must enable the `GPT-4 Vision (inline)` plugin in the Plugins menu. This plugin allows you to send photos or images from your camera for analysis in any Chat mode.
+**Vision:** If you want to send photos from your disk or images from your camera for analysis, and the selected model does not support Vision, you must enable the `Vision (inline)` plugin in the Plugins menu. This plugin allows you to send photos or images from your camera for analysis in any Chat mode.
 
 ![v3_vision_plugins](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v3_vision_plugins.png)
 
@@ -422,7 +422,7 @@ With this plugin, you can capture an image with your camera or attach an image a
 
 ![v3_vision_chat](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v3_vision_chat.png)
 
-**Image generation:** If you want to generate images (using DALL-E) directly in chat you must enable plugin `DALL-E 3 (inline)` in the Plugins menu.
+**Image generation:** If you want to generate images (using DALL-E) directly in chat you must enable plugin `Image generation (inline)` in the Plugins menu.
 Plugin allows you to generate images in Chat mode:
 
 ![v3_img_chat](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v3_img_chat.png)
@@ -580,9 +580,9 @@ and displaying the image onscreen. You can send raw prompt to `DALL-E` in `Image
 
 ![v3_img](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v3_img.png)
 
-Image generation using DALL-E is available in every mode via plugin `DALL-E 3 Image Generation (inline)`. Just ask any model, in any mode, like e.g. GPT-4 to generate an image and it will do it inline, without need to mode change.
+Image generation using DALL-E is available in every mode via plugin `Image Generation (inline)`. Just ask any model, in any mode, like e.g. GPT-4 to generate an image and it will do it inline, without need to mode change.
 
-If you want to generate images (using DALL-E) directly in chat you must enable plugin **DALL-E 3 Inline** in the Plugins menu.
+If you want to generate images (using DALL-E) directly in chat you must enable plugin **Image generation (inline)** in the Plugins menu.
 Plugin allows you to generate images in Chat mode:
 
 ![v3_img_chat](https://github.com/szczyglis-dev/py-gpt/raw/master/docs/source/images/v3_img_chat.png)
@@ -620,7 +620,7 @@ This mode enables image analysis using the `gpt-4o`, `gpt-4-vision` and other vi
 it also allows you to upload images or provide URLs to images. The vision feature can analyze both local 
 images and those found online. 
 
-Vision is also integrated into any chat mode via plugin `GPT-4 Vision (inline)`. Just enable the plugin and use Vision in other work modes, such as Chat or Chat with Files.
+Vision is also integrated into any chat mode via plugin `Vision (inline)`. Just enable the plugin and use Vision in other work modes, such as Chat or Chat with Files.
 
 Vision mode also includes real-time video capture from camera. To capture image from camera and append it to chat just click on video at left side. You can also enable `Auto capture` - image will be captured and appended to chat message every time you send message.
 
@@ -677,12 +677,17 @@ The vector database in use will be displayed in the list of uploaded files, on t
 
 Mode that allows the use of agents offered by `LlamaIndex`.
 
-Includes built-in agents:
+Includes built-in agents (Workflow):
 
-- OpenAI
+- FunctionAgent
 - ReAct
 - Structured Planner (sub-tasks)
 - CodeAct (connected to Code Interpreter plugin)
+- Supervisor + worker
+
+Includes built-in agents (Legacy):
+
+- OpenAI Assistants
 
 In the future, the list of built-in agents will be expanded.
 
@@ -735,6 +740,7 @@ In this mode, you can use pre-configured Experts in Expert mode presets - they w
 - `Simple agent` - a single agent.
 - `Evolve` - in each generation (cycle), the best response from a given parent agent is selected; in the next generation, the cycle repeats.
 - `B2B` - bot-to-bot communication, involving two bots interacting with each other while keeping a human in the loop.
+- `Supervisor + Worker` - one agent (supervisor) acts as a bridge between the user and the second agent (worker). The user provides a query to the supervisor, who then sends instructions to the worker until the task is completed by the worker.
 
 More types will be available in the future.
 
@@ -747,6 +753,7 @@ There are also predefined presets added as examples:
 - `Simple agent`
 - `Writer with Feedback`
 - `2 bots`
+- `Supervisor + worker`
 
 In the Agents (OpenAI) mode, all remote tools are available for the base agent according to the configuration in the Config -> Settings -> Remote tools menu.
 
@@ -799,6 +806,14 @@ Below is a pattern for how different types of agents work. You can use these pat
 - Bot 1 generates a response and sends it to Bot 2.
 - Bot 2 receives the response from Bot 1 as input, provides an answer, and sends the response back to Bot 1 as its input. This cycle repeats.
 - The human can interrupt the loop at any time and update the entire discussion.
+
+**Supervisor + Worker**
+
+- A human provides a query to the Supervisor.
+- The Supervisor prepares instructions for the Worker and sends them to the Worker.
+- The Worker completes the task and returns the result to the Supervisor.
+- If the task is completed, the Supervisor returns the result to the user. If not, the Supervisor sends another instruction to the Worker to complete the task or asks the user if there are any questions.
+- The cycle repeats until the task is completed.
 
 **Tip**: Starting from version `2.5.97`, you can assign and use Experts in all of the agent types.
 
@@ -1326,11 +1341,11 @@ as well as list and create directories.
 
 - `Crontab / Task scheduler` - plugin provides cron-based job scheduling - you can schedule tasks/prompts to be sent at any time using cron-based syntax for task setup.
 
-- `DALL-E 3: Image Generation (inline)` - integrates DALL-E 3 image generation with any chat and mode. Just enable and ask for image in Chat mode, using standard model like GPT-4. The plugin does not require the `+ Tools` option to be enabled.
+- `Image Generation (inline)` - integrates DALL-E 3 image generation with any chat and mode. Just enable and ask for image in Chat mode, using standard model like GPT-4. The plugin does not require the `+ Tools` option to be enabled.
 
 - `Experts (inline)` - allows calling experts in any chat mode. This is the inline Experts (co-op) mode.
 
-- `GPT-4 Vision (inline)` - integrates Vision capabilities with any chat mode, not just Vision mode. When the plugin is enabled, the model temporarily switches to vision in the background when an image attachment or vision capture is provided.
+- `Vision (inline)` - integrates Vision capabilities with any chat mode, not just Vision mode. When the plugin is enabled, the model temporarily switches to vision in the background when an image attachment or vision capture is provided.
 
 - `Real Time` - automatically appends the current date and time to the system prompt, informing the model about current time.
 
@@ -1339,6 +1354,20 @@ as well as list and create directories.
 - `Voice Control (inline)` - provides voice control command execution within a conversation.
 
 - `Mailer` - Provides the ability to send, receive and read emails.
+
+- `Google` - Access Gmail, Drive, Docs, Maps, Calendar, Contacts, Colab, YouTube, Keep - for managing emails, files, events, notes, video info, and contacts.
+
+- `Facebook` - Manage user info, pages, posts, and photos on Facebook pages.
+
+- `Slack` - Handle users, conversations, messages, and files on Slack.
+
+- `Telegram` - Send messages, photos, and documents; manage chats and contacts.
+
+- `X/Twitter` - Interact with tweets and users, manage bookmarks and media, perform likes, retweets, and more.
+
+- `GitHub` - Access GitHub API to manage repositories, issues, and pull requests.
+
+- `Bitbucket` - Access Bitbucket API to manage repositories, issues, and pull requests.
 
 ## Audio Input
 
@@ -2509,7 +2538,7 @@ If enabled, then a new context will be created on every run of the job. *Default
 If enabled, then a tray notification will be shown on every run of the job. *Default:* `True`
 
 
-## DALL-E 3: Image Generation (inline)
+## Image Generation (inline)
 
 The plugin integrates `DALL-E 3` image generation with any chat mode. Simply enable it and request an image in Chat mode, using a standard model such as `GPT-4`. The plugin does not require the `+ Tools` option to be enabled.
 
@@ -2525,7 +2554,7 @@ The plugin allows calling experts in any chat mode. This is the inline Experts (
 
 See the `Work modes -> Experts` section for more details.
 
-## GPT-4 Vision (inline)
+## Vision (inline)
 
 The plugin integrates vision capabilities across all chat modes, not just Vision mode. Once enabled, it allows the model to seamlessly switch to vision processing in the background whenever an image attachment or vision capture is detected.
 
@@ -2636,6 +2665,168 @@ All active extra prompts defined on list will be appended to the system prompt i
 The plugin provides voice control command execution within a conversation.
 
 See the ``Accessibility`` section for more details.
+
+## Google (Gmail, Drive, Calendar, Contacts, YT, Keep, Docs, Maps, Colab)
+
+- **Gmail**
+  - Listing recent emails from Gmail.
+  - Listing all emails from Gmail.
+  - Searching emails in Gmail.
+  - Retrieving email details by ID in Gmail.
+  - Sending an email via Gmail.
+  
+- **Google Calendar**
+  - Listing recent calendar events.
+  - Listing today's calendar events.
+  - Listing tomorrow's calendar events.
+  - Listing all calendar events.
+  - Retrieving calendar events by a specific date.
+  - Adding a new event to the calendar.
+  - Deleting an event from the calendar.
+  
+- **Google Keep**
+  - Listing notes from Google Keep.
+  - Adding a new note to Google Keep.
+  
+- **Google Drive**
+  - Listing files from Google Drive.
+  - Finding a file in Google Drive by its path.
+  - Downloading a file from Google Drive.
+  - Uploading a file to Google Drive.
+  
+- **YouTube**
+  - Retrieving information about a YouTube video.
+  - Retrieving the transcript of a YouTube video.
+  
+- **Google Contacts**
+  - Listing contacts from Google Contacts.
+  - Adding a new contact to Google Contacts.
+  
+- **Google Docs**
+  - Creating a new document.
+  - Retrieving a document.
+  - Listing documents.
+  - Appending text to a document.
+  - Replacing text in a document.
+  - Inserting a heading in a document.
+  - Exporting a document.
+  - Copying from a template.
+  
+- **Google Maps**
+  - Geocoding an address.
+  - Reverse geocoding coordinates.
+  - Getting directions between locations.
+  - Using the distance matrix.
+  - Text search for places.
+  - Finding nearby places.
+  - Generating static map images.
+  
+- **Google Colab**
+  - Listing notebooks.
+  - Creating a new notebook.
+  - Adding a code cell.
+  - Adding a markdown cell.
+  - Getting a link to a notebook.
+  - Renaming a notebook.
+  - Duplicating a notebook.
+
+## Facebook
+
+- Retrieving basic information about the authenticated user.
+- Listing all Facebook pages the user has access to.
+- Setting a specified Facebook page as the default.
+- Retrieving a list of posts from a Facebook page.
+- Creating a new post on a Facebook page.
+- Deleting a post from a Facebook page.
+- Uploading a photo to a Facebook page.
+
+## Slack
+
+- Retrieving a list of users.
+- Listing all conversations.
+- Accessing conversation history.
+- Retrieving conversation replies.
+- Opening a conversation.
+- Posting a message in a chat.
+- Deleting a chat message.
+- Uploading files to Slack.
+
+## Telegram
+
+- Sending text messages to a chat or channel.
+- Sending photos with an optional caption to a chat or channel.
+- Sending documents or files to a chat or channel.
+- Retrieving information about a specific chat or channel.
+- Polling for updates in bot mode.
+- Downloading files using a file identifier.
+- Listing contacts in user mode.
+- Listing recent dialogs or chats in user mode.
+- Retrieving recent messages from a specific chat or channel in user mode.
+
+## X/Twitter
+
+- Retrieve user details by providing their username.
+- Fetch user information using their unique ID.
+- Access recent tweets from a specific user.
+- Search for recent tweets using specific keywords or hashtags.
+- Create a new tweet and post it on the platform.
+- Remove an existing tweet from your profile.
+- Reply to a specific tweet with a new comment.
+- Quote a tweet while adding your own comments or thoughts.
+- Like a tweet to show appreciation or support.
+- Remove a like from a previously liked tweet.
+- Retweet a tweet to share it with your followers.
+- Undo a retweet to remove it from your profile.
+- Hide a specific reply to a tweet.
+- List all bookmarked tweets for easy access.
+- Add a tweet to your bookmarks for later reference.
+- Remove a tweet from your bookmarks.
+- Upload media files such as images or videos for tweeting.
+- Set alternative text for uploaded media for accessibility.
+
+## GitHub
+
+- Retrieve details about your GitHub profile.
+- Get information about a specific GitHub user.
+- List repositories for a user or organization.
+- Retrieve details about a specific repository.
+- Create a new repository.
+- Delete an existing repository.
+- Retrieve the contents of a file in a repository.
+- Upload or update a file in a repository.
+- Delete a file from a repository.
+- List issues in a repository.
+- Create a new issue in a repository.
+- Add a comment to an existing issue.
+- Close an existing issue.
+- List pull requests in a repository.
+- Create a new pull request.
+- Merge an existing pull request.
+- Search for repositories based on a query.
+- Search for issues based on a query.
+- Search for code based on a query.
+
+
+## Bitbucket
+
+- Retrieve details about the authenticated user.
+- Get information about a specific user.
+- List available workspaces.
+- List repositories in a workspace.
+- Get details about a specific repository.
+- Create a new repository.
+- Delete an existing repository.
+- Retrieve contents of a file in a repository.
+- Upload a file to a repository.
+- Delete a file from a repository.
+- List issues in a repository.
+- Create a new issue.
+- Comment on an existing issue.
+- Update details of an issue.
+- List pull requests in a repository.
+- Create a new pull request.
+- Merge an existing pull request.
+- Search for repositories.
 
 
 # Creating Your Own Plugins
@@ -3270,6 +3461,10 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 **General**
 
+- `Verbose` - enables verbose mode.
+
+- `Auto retrieve additional context from RAG`: Auto retrieve additional context from RAG at the beginning if the index is provided.
+
 - `Display a tray notification when the goal is achieved.`: If enabled, a notification will be displayed after goal achieved / finished run.
 
 **Agents (LlamaIndex / OpenAI)**
@@ -3280,9 +3475,7 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Append and compare previous evaluation prompt in next evaluation` - If enabled, previous improvement prompt will be checked in next eval in loop, default: False
 
-- `Verbose` - enables verbose mode.
-
-- `Split response messages` - Split response messages to separated context items in OpenAI Agents mode. Stream mode only.
+- `Split response messages` - Split response messages to separated context items in OpenAI Agents mode.
 
 **Autonomous (Legacy agents)**
 
@@ -3290,7 +3483,7 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Index to use`: Only if sub-mode is llama_index (Chat with files), choose the index to use in both Agent and Expert modes.
 
-- `Use native API function calls`: Use API function calls to run commands from plugins instead of using command prompts - Autonomous agent mode only, default: False
+- `Use native API function calls`: Use API function calls to run tools from plugins instead of using command prompts - Autonomous agent mode only, default: False
 
 - `Use Responses API in Agent mode`: Use Responses API instead of ChatCompletions API in Agent (autonomous) mode. OpenAI models only. Default: False
 
@@ -3298,9 +3491,9 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 - `Sub-mode for experts`: Sub-mode to use in Experts mode (chat, llama_index, etc.). Default: chat.
 
-- `Use planner agent for expert reasoning`: If enabled, the Planner agent will be used for expert calls and expert reasoning. Default: False
+- `Use agent for expert reasoning`: If enabled, the ReAct agent will be used for expert calls and expert reasoning. Default: True
 
-- `Use native API function calls`: Use API function calls to run commands from plugins instead of using command prompts - Experts only, default: False
+- `Use native API function calls`: Use API function calls to run tools from plugins instead of using command prompts - Experts only, default: False
 
 - `Use Responses API in Experts mode (master)`: Use Responses API instead of ChatCompletions API in Experts (master model). OpenAI models only. Default: False
 
@@ -4267,6 +4460,105 @@ may consume additional tokens that are not displayed in the main window.
 
 ## Recent changes:
 
+**2.6.17 (2025-08-21)**
+
+- Optimized profile switching.
+- Fixed: setting initial splitter size on first launch.
+- Added smoother view reload.
+
+**2.6.16 (2025-08-20)**
+
+- Fixed: Attachment string joining.
+- Improved expert function calls.
+- Added sorting to the plugin list.
+
+**2.6.15 (2025-08-20)**
+
+- Added: do not change the context menu font size in text editing.
+- Added: do not reload context items on tab change if already loaded.
+- Fixed: appending of names and avatars in the stream chunk.
+
+**2.6.14 (2025-08-19)**
+
+- Fixed: Agent evaluation tool runs even if tools are disabled.
+- Extended agent response evaluation by providing the full context of the output.
+
+**2.6.13 (2025-08-19)**
+
+- Fix: Do not load the index in experts if it is not provided.
+- Fix: Load remote images in the webview.
+- Fix: Presets list refresh.
+- Optimize context items reload.
+
+**2.6.12 (2025-08-19)**
+
+- Optimized web renderer memory cleanup.
+
+**2.6.11 (2025-08-18)**
+
+- Added the ability to close the dialog window with the Esc key.
+- Made context item deletion without output refresh.
+- Optimizations.
+
+**2.6.10 (2025-08-17)**
+
+- Enhanced the handling of the context list.
+- Integrated RAG into OpenAI Agents.
+- Enhanced RAG management in Agents.
+- Added an option: Config -> Agents -> General -> Auto-retrieve additional context from RAG.
+- Included Google Docs, Maps, and Colab in the Google plugin.
+
+**2.6.9 (2025-08-17)**
+
+- Added two new agents for LlamaIndex and OpenAI: Supervisor and Worker (beta).
+
+**2.6.8 (2025-08-16)**
+
+- Fixed: updated paragraph color on theme switch.
+- Added switching to duplicated preset after creation.
+- Reduced delay after selecting context.
+- Optimized rendering of mathematical formulas.
+
+**2.6.7 (2025-08-16)**
+
+- Fix: missing entity sanitize.
+
+**2.6.6 (2025-08-16)**
+
+- Output rendering optimization.
+
+**2.6.5 (2025-08-16)**
+
+- Fix: crash when creating a context in a new group.
+- Fix: high CPU usage after switching profiles.
+
+**2.6.4 (2025-08-15)**
+
+- Fix: tool execution in OpenAI Agents.
+- Optimizations.
+
+**2.6.3 (2025-08-15)**
+
+- Optimized streaming and CPU usage.
+- Fixed crash on set label color and ctx duplicate.
+
+**2.6.2 (2025-08-15)**
+
+- Added plugins (beta): Google, Facebook, X/Twitter, Telegram, Slack, GitHub, Bitbucket.
+
+**2.6.1 (2025-08-14)**
+
+- LlamaIndex Agents refactored to Workflows.
+
+**2.6.0 (2025-08-13)**
+
+- Added split responses to the OpenAI Agents in non-streaming mode.
+- Disabled auto-scroll when manually scrolled to the top.
+- Increased scrollbar width in the light theme.
+- Optimized the clearing of the streaming buffer.
+- Optimized imports.
+- Made CSS improvements.
+
 **2.5.98 (2025-08-12)**
 
 - Added support for GPT-5 in LlamaIndex/Chat with Files mode.
@@ -4297,150 +4589,6 @@ may consume additional tokens that are not displayed in the main window.
 - Added a new agent mode in OpenAI Agents: Bot 2 Bot.
 - Fixed: Storing the last used context ID when empty.
 - Fixed: Reloading items when an agent run is stopped.
-
-**2.5.93 (2025-08-08)**
-
-- Added a new tool: Translate - in menu Tools - feature #123.
-
-**2.5.92 (2025-08-08)**
-
-- Added max files to store config option in Audio -> Cache.
-
-**2.5.91 (2025-08-08)**
-
-- Added GPT-5.
-- Added audio cache - #118.
-
-**2.5.90 (2025-08-07)**
-
-- Fix: Initialize context summary if a conversation starts with a tool call.
-- Fix: Store splitter positions even if the object is deleted from memory.
-- Update: CSS improvements.
-
-**2.5.89 (2025-08-07)**
-
-- Added audio output device selection in Config -> Audio - issue #117
-- Added audio input and output backend selections in Config -> Audio.
-
-**2.5.88 (2025-08-06)**
-
-- Optimized the process of unloading tabs from memory.
-- Reduced initial RAM usage on launch.
-- Added a handler for the SIGTERM signal.
-
-**2.5.87 (2025-08-05)**
-
-- Optimized memory cleanup.
-
-**2.5.86 (2025-08-04)**
-
-- Optimized CPU and memory usage.
-- OpenAI vector stores tool added to Tools menu.
-- Fixed schema parsing for tools in Agent (OpenAI) mode.
-- Fixed multi-threading when uploading to remote vector store.
-- Fixed Urls open in Snap.
-
-**2.5.85 (2025-08-02)**
-
-- Added importer for models from providers in Config -> Models -> Import... - #127
-- Fix: options save in models editor.
-
-**2.5.84 (2025-08-02)**
-
-- Added a new OpenAI agent mode: Evolve. You can find its description in the documentation under the section Modes -> Agent (OpenAI).
-
-**2.5.83 (2025-08-01)**
-
-- Improved streaming in Agent (OpenAI) mode.
-- Improved loading of default options in presets.
-- Added context summary event if the kernel stopped.
-- Implemented dynamic width for opened combo boxes.
-
-**2.5.82 (2025-08-01)**
-
-- Added a new OpenAI agents: researcher, planner, feedback.
-
-**2.5.81 (2025-07-31)**
-
-- Disabled remote tools by default in non-OpenAI providers in Agent (OpenAI) mode.
-- Removed unsupported models from Agent (OpenAI) mode.
-
-**2.5.80 (2025-07-30)**
-
-- Improved the stop command in Agent mode: added saving of current output on break.
-- Fixed the experts providers list in Agent (LlamaIndex): now only Llama providers are displayed.
-- Added max_turns configuration to Agent (OpenAI), shared with Agents -> Max steps configuration option value.
-
-**2.5.79 (2025-07-30)**
-
-- Added prevent text break on input send when the cursor is inside the text.
-- Fix: updating expert IDs on preset save.
-- Added notification if no agent is selected.
-- Disabled FFmpeg warnings.
-
-**2.5.78 (2025-07-30)**
-
-- Added support for Python 3.13.
-- Fixed history prepare in Agent (LlamaIndex) mode.
-
-**2.5.77 (2025-07-30)**
-
-- Fix: history prepare in Agent (OpenAI) mode.
-- Agent response evaluation splitted into two modes: by the percentage of task completion and by accuracy.
-
-**2.5.76 (2025-07-30)**
-
-- Added a new mode: Agent (OpenAI) and integrated `openai-agents` into the app (beta).
-
-**2.5.75 (2025-07-28)**
-
-- Fix: context append in LlamaIndex agents.
-
-**2.5.74 (2025-07-28)**
-
-- Fix: mouse buttons handling in Computer use mode.
-- Added double click handler.
-
-**2.5.73 (2025-07-28)**
-
-- Stream rendering optimization, reduced CPU usage.
-- Fix: < and > rendering in math formulas.
-- Fix: do not automatically add tools to the agent when the inline plugin is enabled but the Tools option is not enabled.
-- Fix: corrected saving of the last context element when the stream is interrupted.
-- Fix: unlock response regeneration after stopped event.
-
-**2.5.72 (2025-07-27)**
-
-- Improved stop command.
-
-**2.5.71 (2025-07-27)**
-
-- Added a new working mode: `Computer use` for autonomous navigation in the user's environment (beta; utilizes the `Computer use` remote tool and the model `computer-use-preview`).
-- Added a new remote tool: `Remote MCP` (with configuration in Settings -> Remote Tools).
-- Added a new remote tool: `File Search` (with configuration in Settings -> Remote Tools).
-- Added a new option `Always continue...` to Agent (autonomous) plugin settings.
-
-**2.5.70 (2025-07-26)**
-
-- Added separate config for Responses API for expert instances.
-- Added a new model: mistral-small3.1.
-
-**2.5.69 (2025-07-25)**
-
-- The Responses API and remote tools are now allowed in Agent (autonomous) and Expert modes. Default: disabled.
-- Added separate options in the configuration for enabling the Responses API in: Config -> Agents and Experts.
-- Improved expert and agents system prompt.
-
-**2.5.68 (2025-07-25)**
-
-- Added a separate configuration to enable or disable native function calls in both agent and expert modes.
-
-**2.5.67 (2025-07-25)**
-
-- Added native tool call functionality in Experts.
-- Enhanced the use of multiple tool calls in Experts.
-- Fixed the display of Expert names when responding.
-- Improved context history handling in Experts.
 
 # Credits and links
 

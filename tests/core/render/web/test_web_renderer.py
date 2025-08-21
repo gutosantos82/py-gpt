@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.10 00:00:00                  #
+# Updated Date: 2025.08.16 00:00:00                  #
 # ================================================== #
 import json
 import os
@@ -151,7 +151,6 @@ class TestRenderer:
         renderer.clear_nodes.assert_called_with(1)
         renderer.append.assert_called_with(1, "content", flush=True)
         assert renderer.pids[1].html == ""
-        fake_node.setUpdatesEnabled.assert_called_with(True)
 
     def test_get_pid(self, renderer, fake_window):
         meta = DummyCtxMeta()
@@ -298,7 +297,7 @@ class TestRenderer:
         renderer.is_stream = MagicMock(return_value=False)
         renderer.append_node = MagicMock()
         renderer.append_input(meta, ctx, True, False)
-        renderer.append_node.assert_called_with(meta, ctx, "test input", renderer.NODE_INPUT)
+        renderer.append_node.assert_called_with(meta=meta, ctx=ctx, html="test input", type=renderer.NODE_INPUT)
 
     def test_append_output(self, renderer):
         meta = DummyCtxMeta()
@@ -390,7 +389,11 @@ class TestRenderer:
 
     def test_append(self, renderer, fake_window):
         pid = 1
-        renderer.pids = {pid: MagicMock(loaded=True, use_buffer=False, html="buffer")}
+        pid_data = PidData(pid)
+        pid_data.loaded = True
+        pid_data.use_buffer = False
+        pid_data.html = "buffer"
+        renderer.pids = {pid: pid_data}
         node = fake_window.core.ctx.output.get_by_pid(pid)
         node.page().runJavaScript = MagicMock()
         renderer.flush_output = MagicMock()
@@ -583,22 +586,11 @@ class TestRenderer:
         node.update_current_content = MagicMock()
         renderer.flush_output(pid, "html")
         node.page().runJavaScript.assert_called()
-        node.update_current_content.assert_called()
 
     def test_reload(self, renderer, fake_window):
         renderer.window.controller.ctx.refresh_output = MagicMock()
         renderer.reload()
         renderer.window.controller.ctx.refresh_output.assert_called()
-
-    def test_flush(self, renderer, fake_window):
-        pid = 1
-        renderer.pids = {pid: MagicMock(loaded=False)}
-        renderer.body.get_html = MagicMock(return_value="html")
-        node = fake_window.core.ctx.output.get_by_pid(pid)
-        node.setHtml = MagicMock()
-        renderer.flush(pid)
-        assert renderer.pids[pid].document == "html"
-        node.setHtml.assert_called_with("html", baseUrl="file://")
 
     def test_fresh(self, renderer, fake_window):
         meta = DummyCtxMeta()
@@ -610,9 +602,7 @@ class TestRenderer:
         node.resetPage = MagicMock()
         node.setHtml = MagicMock()
         renderer.fresh(meta)
-        assert renderer.pids[pid].loaded is False
         node.resetPage.assert_called()
-        node.setHtml.assert_called_with("html", baseUrl="file://")
 
     def test_get_output_node(self, renderer, fake_window):
         meta = DummyCtxMeta()
@@ -629,15 +619,6 @@ class TestRenderer:
         fake_window.ui.nodes = {'input': "input_node"}
         res = renderer.get_input_node()
         assert res == "input_node"
-
-    def test_get_document(self, renderer):
-        renderer.window.core.ctx.container.get_active_pid = MagicMock(return_value=1)
-        renderer.pids = {1: MagicMock(document="<html><br></html>")}
-        renderer.parser.to_plain_text = MagicMock(return_value="plain")
-        res = renderer.get_document(True)
-        assert res == "plain"
-        res = renderer.get_document(False)
-        assert res == "<html><br></html>"
 
     def test_remove_item(self, renderer, fake_window):
         meta = DummyCtxMeta()

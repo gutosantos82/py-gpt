@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.09 01:00:00                  #
+# Updated Date: 2025.08.19 07:00:00                  #
 # ================================================== #
 
 import os
@@ -24,6 +24,13 @@ if platform.system() == 'Windows':
 
 # enable debug logging
 # os.environ["QT_LOGGING_RULES"] = "*.debug=true"
+# os.environ["QTWEBENGINE_REMOTE_DEBUGGING"] = "9222"
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+    "--renderer-process-limit=1 "
+    "--process-per-site "
+    "--enable-precise-memory-info "
+    "--js-flags=--expose-gc"
+)
 
 _original_open = builtins.open
 
@@ -70,14 +77,24 @@ from pygpt_net.plugin.openai_vision import Plugin as OpenAIVisionPlugin
 from pygpt_net.plugin.real_time import Plugin as RealTimePlugin
 from pygpt_net.plugin.agent import Plugin as AgentPlugin
 from pygpt_net.plugin.mailer import Plugin as MailerPlugin
+from pygpt_net.plugin.google import Plugin as GooglePlugin
+from pygpt_net.plugin.twitter import Plugin as TwitterPlugin
+from pygpt_net.plugin.facebook import Plugin as FacebookPlugin
+from pygpt_net.plugin.telegram import Plugin as TelegramPlugin
+from pygpt_net.plugin.slack import Plugin as SlackPlugin
+from pygpt_net.plugin.github import Plugin as GithubPlugin
+from pygpt_net.plugin.bitbucket import Plugin as BitbucketPlugin
 
 # agents (Llama-index)
-from pygpt_net.provider.agents.llama_index.openai import OpenAIAgent
-from pygpt_net.provider.agents.llama_index.openai_assistant import OpenAIAssistantAgent
-from pygpt_net.provider.agents.llama_index.planner import PlannerAgent
-from pygpt_net.provider.agents.llama_index.react import ReactAgent
+# from pygpt_net.provider.agents.llama_index.legacy.openai import OpenAIAgent
+from pygpt_net.provider.agents.llama_index.legacy.openai_assistant import OpenAIAssistantAgent
+# from pygpt_net.provider.agents.llama_index.legacy.planner import PlannerAgent
+from pygpt_net.provider.agents.llama_index.planner_workflow import PlannerAgent as PlannerWorkflowAgent
+from pygpt_net.provider.agents.llama_index.openai_workflow import OpenAIAgent as OpenAIWorkflowAgent
+# from pygpt_net.provider.agents.llama_index.legacy.react import ReactAgent
 from pygpt_net.provider.agents.llama_index.react_workflow import ReactWorkflowAgent
-from pygpt_net.provider.agents.llama_index.code_act import CodeActAgent
+from pygpt_net.provider.agents.llama_index.codeact_workflow import CodeActAgent
+from pygpt_net.provider.agents.llama_index.supervisor_workflow import SupervisorAgent as LlamaSupervisorAgent
 from pygpt_net.provider.agents.openai.agent import Agent as OpenAIAgentsBase
 from pygpt_net.provider.agents.openai.agent_with_experts import Agent as OpenAIAgentsExperts
 from pygpt_net.provider.agents.openai.agent_with_experts_feedback import Agent as OpenAIAgentsExpertsFeedback
@@ -86,6 +103,7 @@ from pygpt_net.provider.agents.openai.bot_researcher import Agent as OpenAIAgent
 from pygpt_net.provider.agents.openai.agent_planner import Agent as OpenAIAgentPlanner
 from pygpt_net.provider.agents.openai.evolve import Agent as OpenAIAgentsEvolve
 from pygpt_net.provider.agents.openai.agent_b2b import Agent as OpenAIAgentsB2B
+from pygpt_net.provider.agents.openai.supervisor import Agent as OpenAIAgentSupervisor
 
 # LLM wrapper providers (langchain, llama-index, embeddings)
 from pygpt_net.provider.llms.anthropic import AnthropicLLM
@@ -378,6 +396,13 @@ def run(**kwargs):
     launcher.add_plugin(IdxLlamaIndexPlugin())
     launcher.add_plugin(MailerPlugin())
     launcher.add_plugin(CrontabPlugin())
+    launcher.add_plugin(GooglePlugin())
+    launcher.add_plugin(TwitterPlugin())
+    launcher.add_plugin(FacebookPlugin())
+    launcher.add_plugin(TelegramPlugin())
+    launcher.add_plugin(SlackPlugin())
+    launcher.add_plugin(GithubPlugin())
+    launcher.add_plugin(BitbucketPlugin())
 
     # register custom plugins
     plugins = kwargs.get('plugins', None)
@@ -420,12 +445,15 @@ def run(**kwargs):
             launcher.add_vector_store(store)
 
     # register base agents
-    launcher.add_agent(OpenAIAgent())  # llama-index
+    # launcher.add_agent(OpenAIAgent())  # llama-index
+    launcher.add_agent(OpenAIWorkflowAgent())  # llama-index
     launcher.add_agent(OpenAIAssistantAgent())  # llama-index
-    launcher.add_agent(PlannerAgent())  # llama-index
-    launcher.add_agent(ReactAgent())  # llama-index
+    # launcher.add_agent(PlannerAgent())  # llama-index
+    launcher.add_agent(PlannerWorkflowAgent())  # llama-index
+    # launcher.add_agent(ReactAgent())  # llama-index
     launcher.add_agent(ReactWorkflowAgent())  # llama-index
     launcher.add_agent(CodeActAgent())  # llama-index
+    launcher.add_agent(LlamaSupervisorAgent())  # llama-index
     launcher.add_agent(OpenAIAgentsBase())  # openai-agents
     launcher.add_agent(OpenAIAgentsExperts())  # openai-agents
     launcher.add_agent(OpenAIAgentFeedback())  # openai-agents
@@ -434,6 +462,7 @@ def run(**kwargs):
     launcher.add_agent(OpenAIAgentsExpertsFeedback())  # openai-agents
     launcher.add_agent(OpenAIAgentsEvolve())  # openai-agents
     launcher.add_agent(OpenAIAgentsB2B())  # openai-agents
+    launcher.add_agent(OpenAIAgentSupervisor())  # openai-agents
 
     # register custom agents
     agents = kwargs.get('agents', None)

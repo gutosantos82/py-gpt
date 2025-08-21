@@ -55,6 +55,14 @@ class BaseRenderer:
         """
         pass
 
+    def get_pid_data(self, pid: int):
+        """
+        Get PID data for given PID
+
+        :param pid: PID
+        """
+        pass
+
     def is_stream(self) -> bool:
         """
         Check if it is a stream
@@ -251,19 +259,19 @@ class BaseRenderer:
         """
         pass
 
-    def remove_item(self, id: int):
+    def remove_item(self, ctx: CtxItem):
         """
         Remove item from output
 
-        :param id: context item ID
+        :param ctx: context item
         """
         pass
 
-    def remove_items_from(self, id: int):
+    def remove_items_from(self, ctx: CtxItem):
         """
         Remove item from output
 
-        :param id: context item ID
+        :param ctx: context item
         """
         pass
 

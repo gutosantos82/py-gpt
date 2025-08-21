@@ -24,13 +24,20 @@ The following plugins are currently available, and model can use them instantly:
 * ``Serial port / USB`` - plugin provides commands for reading and sending data to USB ports.
 * ``Context history (calendar, inline)`` - provides access to context history database.
 * ``Crontab / Task scheduler`` - plugin provides cron-based job scheduling - you can schedule tasks/prompts to be sent at any time using cron-based syntax for task setup.
-* ``DALL-E 3: Image Generation (inline)`` - integrates DALL-E 3 image generation with any chat and mode. Just enable and ask for image in Chat mode, using standard model like GPT-4. The plugin does not require the ``+ Tools`` option to be enabled.
+* ``Image Generation (inline)`` - integrates DALL-E 3 image generation with any chat and mode. Just enable and ask for image in Chat mode, using standard model like GPT-4. The plugin does not require the ``+ Tools`` option to be enabled.
 * ``Experts (inline)`` - allows calling experts in any chat mode. This is the inline Experts (co-op) mode.
-* ``GPT-4 Vision (inline)`` - integrates vision capabilities with any chat mode, not just Vision mode. When the plugin is enabled, the model temporarily switches to vision in the background when an image attachment or vision capture is provided.
+* ``Vision (inline)`` - integrates vision capabilities with any chat mode, not just Vision mode. When the plugin is enabled, the model temporarily switches to vision in the background when an image attachment or vision capture is provided.
 * ``Real Time`` - automatically appends the current date and time to the system prompt, informing the model about current time.
 * ``System Prompt Extra`` - appends additional system prompts (extra data) from a list to every current system prompt. You can enhance every system prompt with extra instructions that will be automatically appended to the system prompt.
 * ``Voice Control (inline)`` - provides voice control command execution within a conversation.
 * ``Mailer`` - Provides the ability to send, receive and read emails.
+* ``Google`` - Access Gmail, Drive, Docs, Maps, Calendar, Contacts, Colab, YouTube, Keep - for managing emails, files, events, notes, video info, and contacts.
+* ``Facebook`` - Manage user info, pages, posts, and photos on Facebook pages.
+* ``Slack`` - Handle users, conversations, messages, and files on Slack.
+* ``Telegram`` - Send messages, photos, and documents; manage chats and contacts.
+* ``X/Twitter`` - Interact with tweets and users, manage bookmarks and media, perform likes, retweets, and more.
+* ``GitHub`` - Access GitHub API to manage repositories, issues, and pull requests.
+* ``Bitbucket`` - Access Bitbucket API to manage repositories, issues, and pull requests.
 
 
 Creating Your Own Plugins
@@ -1248,8 +1255,8 @@ If enabled, then a new context will be created on every run of the job." *Defaul
 If enabled, then a tray notification will be shown on every run of the job. *Default:* `True`
 
 
-DALL-E 3: Image Generation (inline)
------------------------------------
+Image Generation (inline)
+-------------------------
 
 The plugin integrates ``DALL-E 3`` image generation with any chat mode. Simply enable it and request an image in Chat mode, using a standard model such as ``GPT-4``. The plugin does not require the ``+ Tools`` option to be enabled.
 
@@ -1267,8 +1274,8 @@ The plugin allows calling experts in any chat mode. This is the inline Experts (
 See the ``Work modes -> Experts`` section for more details.
 
 
-GPT-4 Vision (inline)
----------------------
+Vision (inline)
+----------------
 
 The plugin integrates vision capabilities across all chat modes, not just Vision mode. Once enabled, it allows the model to seamlessly switch to vision processing in the background whenever an image attachment or vision capture is detected.
 
@@ -1382,3 +1389,195 @@ Voice Control (inline)
 The plugin provides voice control command execution within a conversation.
 
 See the ``Accessibility`` section for more details.
+
+
+Google (Gmail, Drive, Calendar, Contacts, YT, Keep, Docs, Maps, Colab)
+======================================================================
+
+**Gmail**
+---------
+
+- Listing recent emails from Gmail.
+- Listing all emails from Gmail.
+- Searching emails in Gmail.
+- Retrieving email details by ID in Gmail.
+- Sending an email via Gmail.
+
+**Google Calendar**
+-------------------
+
+- Listing recent calendar events.
+- Listing today's calendar events.
+- Listing tomorrow's calendar events.
+- Listing all calendar events.
+- Retrieving calendar events by a specific date.
+- Adding a new event to the calendar.
+- Deleting an event from the calendar.
+
+**Google Keep**
+---------------
+
+- Listing notes from Google Keep.
+- Adding a new note to Google Keep.
+
+**Google Drive**
+----------------
+
+- Listing files from Google Drive.
+- Finding a file in Google Drive by its path.
+- Downloading a file from Google Drive.
+- Uploading a file to Google Drive.
+
+**YouTube**
+-----------
+
+- Retrieving information about a YouTube video.
+- Retrieving the transcript of a YouTube video.
+
+**Google Contacts**
+-------------------
+
+- Listing contacts from Google Contacts.
+- Adding a new contact to Google Contacts.
+
+**Google Docs**
+---------------
+
+- Creating a new document.
+- Retrieving a document.
+- Listing documents.
+- Appending text to a document.
+- Replacing text in a document.
+- Inserting a heading in a document.
+- Exporting a document.
+- Copying from a template.
+
+**Google Maps**
+---------------
+
+- Geocoding an address.
+- Reverse geocoding coordinates.
+- Getting directions between locations.
+- Using the distance matrix.
+- Text search for places.
+- Finding nearby places.
+- Generating static map images.
+
+**Google Colab**
+----------------
+
+- Listing notebooks.
+- Creating a new notebook.
+- Adding a code cell.
+- Adding a markdown cell.
+- Getting a link to a notebook.
+- Renaming a notebook.
+- Duplicating a notebook.
+
+
+Facebook
+---------
+
+* Retrieving basic information about the authenticated user.
+* Listing all Facebook pages the user has access to.
+* Setting a specified Facebook page as the default.
+* Retrieving a list of posts from a Facebook page.
+* Creating a new post on a Facebook page.
+* Deleting a post from a Facebook page.
+* Uploading a photo to a Facebook page.
+
+
+Slack
+------
+
+* Retrieving a list of users.
+* Listing all conversations.
+* Accessing conversation history.
+* Retrieving conversation replies.
+* Opening a conversation.
+* Posting a message in a chat.
+* Deleting a chat message.
+* Uploading files to Slack.
+
+Telegram
+----------
+
+* Sending text messages to a chat or channel.
+* Sending photos with an optional caption to a chat or channel.
+* Sending documents or files to a chat or channel.
+* Retrieving information about a specific chat or channel.
+* Polling for updates in bot mode.
+* Downloading files using a file identifier.
+* Listing contacts in user mode.
+* Listing recent dialogs or chats in user mode.
+* Retrieving recent messages from a specific chat or channel in user mode.
+
+
+X/Twitter
+----------
+
+* Retrieve user details by providing their username.
+* Fetch user information using their unique ID.
+* Access recent tweets from a specific user.
+* Search for recent tweets using specific keywords or hashtags.
+* Create a new tweet and post it on the platform.
+* Remove an existing tweet from your profile.
+* Reply to a specific tweet with a new comment.
+* Quote a tweet while adding your own comments or thoughts.
+* Like a tweet to show appreciation or support.
+* Remove a like from a previously liked tweet.
+* Retweet a tweet to share it with your followers.
+* Undo a retweet to remove it from your profile.
+* Hide a specific reply to a tweet.
+* List all bookmarked tweets for easy access.
+* Add a tweet to your bookmarks for later reference.
+* Remove a tweet from your bookmarks.
+* Upload media files such as images or videos for tweeting.
+* Set alternative text for uploaded media for accessibility.
+
+
+GitHub
+-------
+
+* Retrieve details about your GitHub profile.
+* Get information about a specific GitHub user.
+* List repositories for a user or organization.
+* Retrieve details about a specific repository.
+* Create a new repository.
+* Delete an existing repository.
+* Retrieve the contents of a file in a repository.
+* Upload or update a file in a repository.
+* Delete a file from a repository.
+* List issues in a repository.
+* Create a new issue in a repository.
+* Add a comment to an existing issue.
+* Close an existing issue.
+* List pull requests in a repository.
+* Create a new pull request.
+* Merge an existing pull request.
+* Search for repositories based on a query.
+* Search for issues based on a query.
+* Search for code based on a query.
+
+
+Bitbucket
+---------
+
+* Retrieve details about the authenticated user.
+* Get information about a specific user.
+* List available workspaces.
+* List repositories in a workspace.
+* Get details about a specific repository.
+* Create a new repository.
+* Delete an existing repository.
+* Retrieve contents of a file in a repository.
+* Upload a file to a repository.
+* Delete a file from a repository.
+* List issues in a repository.
+* Create a new issue.
+* Comment on an existing issue.
+* Update details of an issue.
+* List pull requests in a repository.
+* Create a new pull request.
+* Merge an existing pull request.
+* Search for repositories.

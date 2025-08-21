@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.07.26 18:00:00                  #
+# Updated Date: 2025.08.20 09:00:00                  #
 # ================================================== #
 
 import copy
@@ -52,12 +52,12 @@ class Command:
             # check if commands are enabled, leave only enabled commands
             for cmd in list(cmds):
                 if "cmd" not in cmd:
-                    self.log("[cmd] Command without 'cmd' key: " + str(cmd))
+                    self.log(f"[cmd] Command without 'cmd' key: {cmd}")
                     cmds.remove(cmd)
                     continue
                 cmd_id = str(cmd["cmd"])
                 if not self.window.core.command.is_enabled(cmd_id) and not ctx.force_call:
-                    self.log("[cmd] Command not allowed: " + cmd_id)
+                    self.log(f"[cmd] Command not allowed: {cmd_id}")
                     cmds.remove(cmd)  # remove command from execution list
 
             # agent mode
@@ -88,6 +88,10 @@ class Command:
             else:
                 reply.type = ReplyContext.CMD_EXECUTE_INLINE
 
+            # force call (experts, internal, etc.)
+            if internal and ctx.force_call:
+                reply.type = ReplyContext.CMD_EXECUTE
+
             data = {
                 "meta": ctx.meta,
             }
@@ -101,10 +105,19 @@ class Command:
             if internal:
                 ctx.agent_call = True
                 if reply.type == ReplyContext.CMD_EXECUTE:
-                    self.window.controller.plugins.apply_cmds(
-                        reply.ctx,
-                        reply.cmds,
-                    )
+                    if ctx.force_call:
+                        # force call, execute all commands
+                        self.window.controller.plugins.apply_cmds(
+                            reply.ctx,
+                            reply.cmds,
+                            all=True,
+                            execute_only=True,
+                        )
+                    else:
+                        self.window.controller.plugins.apply_cmds(
+                            reply.ctx,
+                            reply.cmds,
+                        )
                 elif reply.type == ReplyContext.CMD_EXECUTE_INLINE:
                     self.window.controller.plugins.apply_cmds_inline(
                         reply.ctx,
@@ -114,7 +127,6 @@ class Command:
             else:
                 # force call
                 if ctx.force_call:
-                    #ctx.agent_call = True
                     self.window.controller.plugins.apply_cmds(
                         reply.ctx,
                         reply.cmds,

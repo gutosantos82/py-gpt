@@ -6,11 +6,12 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 14:00:00                  #
+# Updated Date: 2025.08.19 07:00:00                  #
 # ================================================== #
 
 import base64
-from typing import Optional
+import io
+from typing import Optional, Literal
 
 from PySide6.QtCore import QObject, Signal, Slot, QRunnable
 
@@ -19,6 +20,32 @@ from pygpt_net.core.events import RenderEvent
 from pygpt_net.core.types import MODE_ASSISTANT
 from pygpt_net.core.text.utils import has_unclosed_code_tag
 from pygpt_net.item.ctx import CtxItem
+
+EventType = Literal[
+    "response.completed",
+    "response.output_text.delta",
+    "response.output_item.added",
+    "response.function_call_arguments.delta",
+    "response.function_call_arguments.done",
+    "response.output_text.annotation.added",
+    "response.reasoning_summary_text.delta",
+    "response.output_item.done",
+    "response.code_interpreter_call_code.delta",
+    "response.code_interpreter_call_code.done",
+    "response.image_generation_call.partial_image",
+    "response.created",
+    "response.done",
+    "response.failed",
+    "error",
+]
+ChunkType = Literal[
+    "api_chat",
+    "api_chat_responses",
+    "api_completion",
+    "langchain_chat",
+    "llama_chat",
+    "raw",
+]
 
 class WorkerSignals(QObject):
     """
@@ -38,6 +65,7 @@ class StreamWorker(QRunnable):
         self.signals = WorkerSignals()
         self.ctx = ctx
         self.window = window
+        self.stream = None
 
     @Slot()
     def run(self):
@@ -54,17 +82,16 @@ class StreamWorker(QRunnable):
         output_tokens = 0
         begin = True
         error = None
-        fn_args_buffers = {}
-        citations = []
+        fn_args_buffers: dict[str, io.StringIO] = {}
+        citations: Optional[list] = []
         files = []
         img_path = core.image.gen_unique_path(ctx)
         is_image = False
         is_code = False
         force_func_call = False
         stopped = False
-        chunk_type = "raw"
-        generator = ctx.stream
-        ctx.stream = None
+        chunk_type: ChunkType = "raw"
+        generator = self.stream
 
         base_data = {
             "meta": ctx.meta,
@@ -77,6 +104,21 @@ class StreamWorker(QRunnable):
             if generator is not None:
                 for chunk in generator:
                     if ctrl.kernel.stopped():
+                        if hasattr(generator, 'close'):
+                            try:
+                                generator.close()
+                            except Exception:
+                                pass
+                        elif hasattr(generator, 'cancel'):
+                            try:
+                                generator.cancel()
+                            except Exception:
+                                pass
+                        elif hasattr(generator, 'stop'):
+                            try:
+                                generator.stop()
+                            except Exception:
+                                pass
                         ctx.msg_id = None
                         stopped = True
                         break
@@ -86,12 +128,12 @@ class StreamWorker(QRunnable):
                         stopped = True
                         break
 
-                    etype = None
+                    etype: Optional[EventType] = None
                     response = None
 
                     if ctx.use_responses_api:
                         if hasattr(chunk, 'type'):
-                            etype = chunk.type
+                            etype = chunk.type  # type: ignore[assignment]
                             chunk_type = "api_chat_responses"
                         else:
                             continue
@@ -113,7 +155,6 @@ class StreamWorker(QRunnable):
                         else:
                             chunk_type = "raw"
 
-                    # OpenAI chat completion
                     if chunk_type == "api_chat":
                         citations = None
                         delta = chunk.choices[0].delta
@@ -143,7 +184,6 @@ class StreamWorker(QRunnable):
                                 if getattr(tool_chunk.function, "arguments", None):
                                     tool_call["function"]["arguments"] += tool_chunk.function.arguments
 
-                    # OpenAI Responses API
                     elif chunk_type == "api_chat_responses":
                         if etype == "response.completed":
                             for item in chunk.response.output:
@@ -182,7 +222,6 @@ class StreamWorker(QRunnable):
                         elif etype == "response.output_text.delta":
                             response = chunk.delta
 
-                        # function_call
                         elif etype == "response.output_item.added" and chunk.item.type == "function_call":
                             tool_calls.append({
                                 "id": chunk.item.id,
@@ -190,18 +229,23 @@ class StreamWorker(QRunnable):
                                 "type": "function",
                                 "function": {"name": chunk.item.name, "arguments": ""}
                             })
-                            fn_args_buffers[chunk.item.id] = ""
+                            fn_args_buffers[chunk.item.id] = io.StringIO()
                         elif etype == "response.function_call_arguments.delta":
-                            fn_args_buffers[chunk.item_id] += chunk.delta
+                            buf = fn_args_buffers.get(chunk.item_id)
+                            if buf is not None:
+                                buf.write(chunk.delta)
                         elif etype == "response.function_call_arguments.done":
                             buf = fn_args_buffers.pop(chunk.item_id, None)
                             if buf is not None:
+                                try:
+                                    args_val = buf.getvalue()
+                                finally:
+                                    buf.close()
                                 for tc in tool_calls:
                                     if tc["id"] == chunk.item_id:
-                                        tc["function"]["arguments"] = buf
+                                        tc["function"]["arguments"] = args_val
                                         break
 
-                        # annotations
                         elif etype == "response.output_text.annotation.added":
                             ann = chunk.annotation
                             if ann['type'] == "url_citation":
@@ -216,7 +260,6 @@ class StreamWorker(QRunnable):
                                     "file_id": ann['file_id'],
                                 })
 
-                        # computer use
                         elif etype == "response.reasoning_summary_text.delta":
                             response = chunk.delta
 
@@ -225,7 +268,6 @@ class StreamWorker(QRunnable):
                             if has_calls:
                                 force_func_call = True
 
-                        # code interpreter
                         elif etype == "response.code_interpreter_call_code.delta":
                             if not is_code:
                                 response = "\n\n**Code interpreter**\n```python\n" + chunk.delta
@@ -235,36 +277,30 @@ class StreamWorker(QRunnable):
                         elif etype == "response.code_interpreter_call_code.done":
                             response = "\n\n```\n-----------\n"
 
-                        # image gen
                         elif etype == "response.image_generation_call.partial_image":
                             image_base64 = chunk.partial_image_b64
                             image_bytes = base64.b64decode(image_base64)
-                            # prosty i bezpieczny overwrite (jak w oryginale)
                             with open(img_path, "wb") as f:
                                 f.write(image_bytes)
+                            del image_bytes
                             is_image = True
 
-                        # response ID
                         elif etype == "response.created":
                             ctx.msg_id = str(chunk.response.id)
                             core.ctx.update_item(ctx)
 
-                        # end/error etype – nic nie robimy
                         elif etype in {"response.done", "response.failed", "error"}:
                             pass
 
-                    # OpenAI completion
                     elif chunk_type == "api_completion":
                         choice0 = chunk.choices[0]
                         if choice0.text is not None:
                             response = choice0.text
 
-                    # langchain chat
                     elif chunk_type == "langchain_chat":
                         if chunk.content is not None:
                             response = str(chunk.content)
 
-                    # llama chat
                     elif chunk_type == "llama_chat":
                         if chunk.delta is not None:
                             response = str(chunk.delta)
@@ -288,10 +324,9 @@ class StreamWorker(QRunnable):
                                     tool_calls.clear()
                                     tool_calls.append(tool_call)
 
-                    # raw text (llama-index / langchain completion)
                     else:
                         if chunk is not None:
-                            response = str(chunk)
+                            response = chunk if isinstance(chunk, str) else str(chunk)
 
                     if response is not None and response != "" and not stopped:
                         if begin and response == "":
@@ -313,13 +348,11 @@ class StreamWorker(QRunnable):
 
                     chunk = None
 
-                # tool calls
                 if tool_calls:
                     ctx.force_call = force_func_call
                     core.debug.info("[chat] Tool calls found, unpacking...")
                     core.command.unpack_tool_calls_chunks(ctx, tool_calls)
 
-                # image
                 if is_image:
                     core.debug.info("[chat] Image generation call found")
                     ctx.images = [img_path]
@@ -330,6 +363,7 @@ class StreamWorker(QRunnable):
         finally:
             output = "".join(output_parts)
             output_parts.clear()
+            del output_parts
 
             if has_unclosed_code_tag(output):
                 output += "\n```"
@@ -341,10 +375,13 @@ class StreamWorker(QRunnable):
                     pass
 
             del generator
+            self.stream = None
 
             ctx.output = output
             ctx.set_tokens(ctx.input_tokens, output_tokens)
             core.ctx.update_item(ctx)
+
+            output = None
 
             if files and not stopped:
                 core.debug.info("[chat] Container files found, downloading...")
@@ -358,11 +395,17 @@ class StreamWorker(QRunnable):
 
             emit_end(ctx)
 
+            for _buf in fn_args_buffers.values():
+                try:
+                    _buf.close()
+                except Exception:
+                    pass
             fn_args_buffers.clear()
             files.clear()
             tool_calls.clear()
-            if citations is not None:
+            if citations is not None and citations is not ctx.urls:
                 citations.clear()
+            citations = None
 
             self.cleanup()
 
@@ -407,6 +450,14 @@ class Stream:
     ):
         """
         Asynchronous append of stream worker to the thread.
+
+        :param ctx: Context item
+        :param mode: Mode of operation (e.g., MODE_ASSISTANT)
+        :param is_response: Whether this is a response stream
+        :param reply: Reply identifier
+        :param internal: Whether this is an internal stream
+        :param context: Optional BridgeContext for additional context
+        :param extra: Additional data to pass to the stream
         """
         self.ctx = ctx
         self.mode = mode
@@ -417,11 +468,13 @@ class Stream:
         self.extra = extra if extra is not None else {}
 
         worker = StreamWorker(ctx, self.window)
-        self.worker = worker
 
+        worker.stream = ctx.stream
         worker.signals.eventReady.connect(self.handleEvent)
         worker.signals.errorOccurred.connect(self.handleError)
         worker.signals.end.connect(self.handleEnd)
+        ctx.stream = None
+        self.worker = worker
 
         self.window.core.debug.info("[chat] Stream begin...")
         self.window.threadpool.start(worker)
@@ -430,6 +483,8 @@ class Stream:
     def handleEnd(self, ctx: CtxItem):
         """
         Slot for handling end of stream
+
+        :param ctx: Context item
         """
         self.window.controller.ui.update_tokens()
 
@@ -457,9 +512,19 @@ class Stream:
         self.worker = None
 
     def handleEvent(self, event):
+        """
+        Slot for handling stream events
+
+        :param event: RenderEvent
+        """
         self.window.dispatch(event)
 
     def handleError(self, error):
+        """
+        Slot for handling stream errors
+
+        :param error: Exception or error message
+        """
         self.window.core.debug.log(error)
         if self.is_response:
             if not isinstance(self.extra, dict):
@@ -475,4 +540,9 @@ class Stream:
             )
 
     def log(self, data: object):
+        """
+        Log data to the debug console
+
+        :param data: object to log
+        """
         self.window.core.debug.info(data)

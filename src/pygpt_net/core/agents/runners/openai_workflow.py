@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 19:00:00                  #
+# Updated Date: 2025.08.12 19:00:00                  #
 # ================================================== #
 
 from typing import Dict, Any, List
@@ -112,7 +112,8 @@ class OpenAIWorkflow(BaseRunner):
                 input: str,
                 output: str,
                 response_id: str,
-                finish: bool = False
+                finish: bool = False,
+                stream: bool = True,
         ) -> CtxItem:
             """
             Callback for next context in cycle
@@ -122,6 +123,7 @@ class OpenAIWorkflow(BaseRunner):
             :param output: output text
             :param response_id: response id for OpenAI
             :param finish: If
+            :param stream: is streaming enabled
             :return: CtxItem - the next context item in the cycle
             """
             # finish current stream
@@ -129,8 +131,10 @@ class OpenAIWorkflow(BaseRunner):
             ctx.extra["agent_output"] = True  # allow usage in history
             ctx.output = output  # set output to current context
             self.window.core.ctx.update_item(ctx)
-            self.send_stream(ctx, signals, False)
-            self.end_stream(ctx, signals)
+
+            if stream:
+                self.send_stream(ctx, signals, False)
+                self.end_stream(ctx, signals)
 
             # create and return next context item
             next_ctx = self.add_next_ctx(ctx)
@@ -181,12 +185,11 @@ class OpenAIWorkflow(BaseRunner):
         # run agent
         ctx, output, response_id = await run(**run_kwargs)
 
-        if not ctx.partial:
+        if not ctx.partial or self.is_stopped():
             response_ctx = self.make_response(ctx, prompt, output, response_id)
             self.send_response(response_ctx, signals, KernelEvent.APPEND_DATA)
         else:
             ctx.partial = False  # last part, not partial anymore
-            # already handled in next_ctx(), so do not return response
 
         self.set_idle(signals)
         return True

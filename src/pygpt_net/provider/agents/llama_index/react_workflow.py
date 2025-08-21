@@ -6,18 +6,12 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.07.30 00:00:00                  #
+# Updated Date: 2025.08.14 03:00:00                  #
 # ================================================== #
 
 from typing import Dict, Any
 
-from llama_index.core.agent.workflow import ReActAgent as Agent
-from llama_index.core.agent.react_multimodal.step import (
-    MultimodalReActAgentWorker,
-)
-
 from pygpt_net.core.types import (
-    MODE_VISION,
     AGENT_TYPE_LLAMA,
 )
 from pygpt_net.core.types import (
@@ -29,10 +23,10 @@ from ..base import BaseAgent
 class ReactWorkflowAgent(BaseAgent):
     def __init__(self, *args, **kwargs):
         super(ReactWorkflowAgent, self).__init__(*args, **kwargs)
-        self.id = "react_workflow"
+        self.id = "react"
         self.type = AGENT_TYPE_LLAMA
         self.mode = AGENT_MODE_WORKFLOW
-        self.name = "ReAct (Workflow)"
+        self.name = "ReAct"
 
     def get_agent(self, window, kwargs: Dict[str, Any]):
         """
@@ -42,11 +36,14 @@ class ReactWorkflowAgent(BaseAgent):
         :param kwargs: keyword arguments
         :return: Agent provider instance
         """
+        from llama_index.core.agent.workflow import ReActAgent as Agent
+
         tools = kwargs.get("tools", [])
         verbose = kwargs.get("verbose", False)
         llm = kwargs.get("llm", None)
         chat_history = kwargs.get("chat_history", [])
         max_iterations = kwargs.get("max_iterations", 10)
+        system_prompt = kwargs.get("system_prompt", None)
 
         """
         # TODO: multimodal support
@@ -65,10 +62,12 @@ class ReactWorkflowAgent(BaseAgent):
             )
             return step_engine.as_agent()
         """
+        # system prompt for ReAct agent is added to messages
         return Agent(
             tools=tools,
             llm=llm,
             chat_history=chat_history,
             max_iterations=max_iterations,
+            system_prompt=system_prompt,
             verbose=verbose,
         )

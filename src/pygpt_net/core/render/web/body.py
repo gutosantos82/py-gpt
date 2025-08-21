@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 00:00:00                  #
+# Updated Date: 2025.08.19 07:00:00                  #
 # ================================================== #
 
 import os
@@ -41,17 +41,15 @@ class Body:
                 <script type="text/javascript" src="qrc:///qtwebchannel/qwebchannel.js"></script>
                 <script type="text/javascript" src="qrc:///js/highlight.min.js"></script>
                 <script type="text/javascript" src="qrc:///js/katex.min.js"></script>
-                <script type="text/javascript" src="qrc:///js/auto-render.min.js"></script>
                 <script>
-
+                const DEBUG_MODE = false;
                 let scrollTimeout = null;
                 let prevScroll = 0;
                 let bridge;
+                let streamQ = [];
+                let streamRAF = 0;
                 let pid = """
-    _HTML_P2 = """
-                new QWebChannel(qt.webChannelTransport, function (channel) {
-                    bridge = channel.objects.bridge;
-                });
+    _HTML_P2 = """                
                 let collapsed_idx = [];
                 let domOutputStream = document.getElementById('_append_output_');
                 let domOutput = document.getElementById('_output_');
@@ -63,14 +61,37 @@ class Body:
     _HTML_P3 = """;
                 let tips_hidden = false;
 
+                let els = {};
+                let highlightScheduled = false;
+                let pendingHighlightRoot = null;
+                let pendingHighlightMath = false;
+                let scrollScheduled = false;
+
+                // timers
+                let tipsTimers = [];
+
+                // clear previous references
+                function resetEphemeralDomRefs() {
+                    domLastCodeBlock = null;
+                    domLastParagraphBlock = null;
+                }
+                function dropIfDetached() {
+                    if (domLastCodeBlock && !domLastCodeBlock.isConnected) domLastCodeBlock = null;
+                    if (domLastParagraphBlock && !domLastParagraphBlock.isConnected) domLastParagraphBlock = null;
+                }
+                function stopTipsTimers() {
+                    tipsTimers.forEach(clearTimeout);
+                    tipsTimers = [];
+                }
+
                 history.scrollRestoration = "manual";
                 document.addEventListener('keydown', function(event) {
                     if (event.ctrlKey && event.key === 'f') {
-                        window.location.href = 'bridge://open_find:' + pid; // send to bridge
+                        window.location.href = 'bridge://open_find:' + pid;
                         event.preventDefault();
                     }
                     if (event.key === 'Escape') {
-                        window.location.href = 'bridge://escape'; // send to bridge
+                        window.location.href = 'bridge://escape';
                         event.preventDefault();
                     }
                 });
@@ -84,56 +105,92 @@ class Body:
                         bridge.log(text);
                     }
                 }
-                function prepare() {        
-                    collapsed_idx = [];  // clear collapsed code
-                    hideTips();
+                function initDomRefs() {
+                    els.container = document.getElementById('container');
+                    els.nodes = document.getElementById('_nodes_');
+                    els.appendInput = document.getElementById('_append_input_');
+                    els.appendOutputBefore = document.getElementById('_append_output_before_');
+                    els.appendOutput = document.getElementById('_append_output_');
+                    els.appendLive = document.getElementById('_append_live_');
+                    els.footer = document.getElementById('_footer_');
+                    els.loader = document.getElementById('_loader_');
+                    els.tips = document.getElementById('tips');
                 }
-                function sanitize(content) {
-                    return content.replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;');
+                function scheduleHighlight(root, withMath = true) {
+                    const scope = root && root.nodeType === 1 ? root : document;
+                    if (!pendingHighlightRoot || pendingHighlightRoot === document) {
+                        pendingHighlightRoot = scope;
+                    } else if (!pendingHighlightRoot.contains(scope)) {
+                        pendingHighlightRoot = document;
+                    }
+                    if (withMath) pendingHighlightMath = true;
+                    if (highlightScheduled) return;
+                    highlightScheduled = true;
+                    requestAnimationFrame(function() {
+                        try {
+                            highlightCodeInternal(pendingHighlightRoot || document, pendingHighlightMath);
+                        } finally {
+                            highlightScheduled = false;
+                            pendingHighlightRoot = null;
+                            pendingHighlightMath = false;
+                        }
+                    });
                 }
-                function highlightCode(withMath = true) {
-                    document.querySelectorAll('pre code').forEach(el => {
-                        if (!el.classList.contains('hljs')) hljs.highlightElement(el);
+                function highlightCodeInternal(root, withMath) {
+                    (root || document).querySelectorAll('pre code:not(.hljs)').forEach(el => {
+                        hljs.highlightElement(el);
                     });
                     if (withMath) {
-                        renderMath();
-                    }  
-                    restoreCollapsedCode();   
+                        renderMath(root);
+                    }
+                    if (DEBUG_MODE) log("execute highlight");
+                    restoreCollapsedCode(root);
+                }
+                function highlightCode(withMath = true, root = null) {
+                     if (DEBUG_MODE) log("queue highlight, withMath: " + withMath);
+                    scheduleHighlight(root || document, withMath);
                 }
                 function hideTips() {
                     if (tips_hidden) return;
-                    document.getElementById('tips').style.display = 'none';
+                    stopTipsTimers();
+                    const t = els.tips || document.getElementById('tips');
+                    if (t) t.style.display = 'none';
                     tips_hidden = true;
                 }
                 function showTips() {
                     if (tips_hidden) return;
                     if (tips.length === 0) return;
-                    document.getElementById('tips').style.display = 'block';
+                    const t = els.tips || document.getElementById('tips');
+                    if (t) t.style.display = 'block';
                     tips_hidden = false;
-                }    
+                }
                 function cycleTips() {
                     if (tips_hidden) return;
                     if (tips.length === 0) return;
-                    let tipContainer = document.getElementById('tips');
                     let currentTip = 0;
                     function showNextTip() {
                         if (tips_hidden) return;
+                        const tipContainer = els.tips || document.getElementById('tips');
+                        if (!tipContainer) return;
                         tipContainer.innerHTML = tips[currentTip];
-                        tipContainer.classList.add('visible');    
-                        setTimeout(function() {
+                        tipContainer.classList.add('visible');
+                        tipsTimers.push(setTimeout(function() {
                             if (tips_hidden) return;
                             tipContainer.classList.remove('visible');
-                            setTimeout(function(){
+                            tipsTimers.push(setTimeout(function(){
                                 currentTip = (currentTip + 1) % tips.length;
                                 showNextTip();
-                            }, 1000);
-                        }, 10000);
+                            }, 1000));
+                        }, 15000));
                     }
+                    stopTipsTimers();
                     showNextTip();
                 }
-                function renderMath() {
-                      const scripts = document.querySelectorAll('script[type^="math/tex"]');
-                      scripts.forEach(function(script) {
+                function renderMath(root) {
+                    if (DEBUG_MODE) log("execute math");
+                    const scope = root || document;
+                    const scripts = scope.querySelectorAll('script[type^="math/tex"]');
+                    scripts.forEach(function(script) {
                         const displayMode = script.type.indexOf('mode=display') > -1;
                         const mathContent = script.textContent || script.innerText;
                         const element = document.createElement(displayMode ? 'div' : 'span');
@@ -145,61 +202,86 @@ class Body:
                         } catch (err) {
                           element.textContent = mathContent;
                         }
-                        script.parentNode.replaceChild(element, script);
+                        const parent = script.parentNode;
+                        if (parent) parent.replaceChild(element, script);
                       });
                 }
-                function scrollToBottom() {
-                    window.scrollTo(0, document.body.scrollHeight);
-                    prevScroll = document.body.scrollHeight;
-                    getScrollPosition();  // store using bridge
+                function isNearBottom(marginPx = 100) {
+                    const el = document.scrollingElement || document.documentElement;
+                    const distanceToBottom = el.scrollHeight - el.clientHeight - el.scrollTop;
+                    return distanceToBottom <= marginPx;
+                }
+                function scheduleScroll(live = false) {
+                    if (scrollScheduled) return;
+                    scrollScheduled = true;
+                    requestAnimationFrame(function() {
+                        scrollScheduled = false;
+                        scrollToBottom(live);
+                    });
+                }
+                function scrollToBottom(live = false) {
+                    const el = document.scrollingElement || document.documentElement;
+                    const marginPx = 450;
+                    let behavior = 'instant';
+                    if (live == true) {
+                        behavior = 'instant';
+                    } else {
+                        behavior = 'smooth';
+                    }
+                    if (isNearBottom(marginPx) || live == false) {
+                        el.scrollTo({ top: el.scrollHeight, behavior });
+                    }
+                    prevScroll = el.scrollHeight;
                 }
                 function appendToInput(content) {
-                    const element = document.getElementById('_append_input_');
+                    const element = els.appendInput || document.getElementById('_append_input_');
                     if (element) {
-                        element.insertAdjacentHTML('beforeend', sanitize(content));
+                        element.insertAdjacentHTML('beforeend', content);
+                        highlightCode(true, element);
+                        scheduleScroll();
                     }
-                    highlightCode();
-                    scrollToBottom();
                 }
-                function appendToOutput(bot_name, content) {
-                    hideTips();
-                    const element = document.getElementById('_append_output_');
-                    if (element) {
-                        let box = element.querySelector('.msg-box');
-                        let msg;
-                        if (!box) {
-                            box = document.createElement('div');
-                            box.classList.add('msg-box');
-                            box.classList.add('msg-bot');
-                            var name = document.createElement('div');
-                            name.classList.add('name-header');
-                            name.classList.add('name-bot');
-                            name.textContent = bot_name;
-                            msg = document.createElement('div');
-                            msg.classList.add('msg');
-                            box.appendChild(name);
-                            box.appendChild(msg);
-                            element.appendChild(box);
-                        } else {
-                            msg = box.querySelector('.msg');
-                        }
-                        if (msg) {
-                            msg.insertAdjacentHTML('beforeend', sanitize(content));
-                        }
+                function getStreamContainer() {
+                    if (domOutputStream && domOutputStream.isConnected) {
+                        return domOutputStream;
                     }
-                    highlightCode();
-                    scrollToBottom();
+                    let element = els.appendOutput || document.getElementById('_append_output_');
+                    if (element) {
+                        domOutputStream = element;
+                    }
+                    return element;
                 }
                 function appendNode(content) {
+                    if (DEBUG_MODE) {
+                        log("APPEND NODE: {" + content + "}");
+                    }
                     clearStreamBefore();
                     prevScroll = 0;
-                    const element = document.getElementById('_nodes_');
+                    const element = els.nodes || document.getElementById('_nodes_');
                     if (element) {
                         element.classList.remove('empty_list');
-                        element.insertAdjacentHTML('beforeend', sanitize(content));
+                        element.insertAdjacentHTML('beforeend', content);
+                        highlightCode(true, element);
+                        scheduleScroll();
                     }
-                    highlightCode();
-                    scrollToBottom();
+                }
+                function clean() {
+                    if (DEBUG_MODE) {
+                        log("-- CLEAN DOM --");
+                    }
+                    const el = els.nodes || document.getElementById('_nodes_');
+                    if (el) {
+                        el.replaceChildren();
+                    }
+                    resetEphemeralDomRefs();
+                    els = {};
+                    try {
+                        if (window.gc) {
+                            window.gc();
+                        }
+                    } catch (e) {
+                        // gc not available
+                    }
                 }
                 function appendExtra(id, content) {
                     hideTips();
@@ -208,11 +290,11 @@ class Body:
                     if (element) {
                         const extra = element.querySelector('.msg-extra');
                         if (extra) {
-                            extra.insertAdjacentHTML('beforeend', sanitize(content));
+                            extra.insertAdjacentHTML('beforeend', content);
+                            highlightCode(true, extra);
+                            scheduleScroll();
                         }
                     }
-                    highlightCode();
-                    scrollToBottom();
                 }
                 function removeNode(id) {
                     prevScroll = 0;
@@ -224,46 +306,38 @@ class Body:
                     if (element) {
                         element.remove();
                     }
+                    resetEphemeralDomRefs();
                     highlightCode();
-                    scrollToBottom();
+                    scheduleScroll();
                 }
                 function removeNodesFromId(id) {
                     prevScroll = 0;
-                    const container = document.getElementById('_nodes_');
+                    const container = els.nodes || document.getElementById('_nodes_');
                     if (container) {
                         const elements = container.querySelectorAll('.msg-box');
-                        remove = false;
+                        let remove = false;
                         elements.forEach(function(element) {
-                            if (element.id.endsWith('-' + id)) {
+                            if (element.id && element.id.endsWith('-' + id)) {
                                 remove = true;
                             }
                             if (remove) {
                                 element.remove();
                             }
                         });
+                        resetEphemeralDomRefs();
+                        highlightCode(true, container);
+                        scheduleScroll();
                     }
-                    highlightCode();
-                    scrollToBottom();
                 }
-                function getStreamContainer() {
-                    let element;
-                    if (domOutputStream) {
-                        element = domOutputStream;
-                    } else {            
-                        element = document.getElementById('_append_output_');
-                        if (element) {
-                            domOutputStream = element;
-                        }
-                    }  
-                    return element;
-                }        
                 function clearStream() {
                     hideTips();
+                    if (DEBUG_MODE) {
+                        log("STREAM CLEAR");
+                    }
                     domLastParagraphBlock = null;
                     domLastCodeBlock = null;
                     domOutputStream = null;
                     const element = getStreamContainer();
-                    let msg;
                     if (element) {
                         let box = element.querySelector('.msg-box');
                         let msg;
@@ -271,45 +345,63 @@ class Body:
                             box = document.createElement('div');
                             box.classList.add('msg-box');
                             box.classList.add('msg-bot');
-                            const name = document.createElement('div');
-                            name.classList.add('name-header');
-                            name.classList.add('name-bot');
-                            name.textContent = bot_name;
                             msg = document.createElement('div');
                             msg.classList.add('msg');
-                            box.appendChild(name);
                             box.appendChild(msg);
                             element.appendChild(box);
                         } else {
                             msg = box.querySelector('.msg');
                         }
                         if (msg) {
-                            msg.innerHTML = ''; // clear previous content
+                            msg.replaceChildren();
                         }
                     }
                 }
                 function beginStream() {
                     hideTips();
+                    if (DEBUG_MODE) {
+                        log("STREAM BEGIN");
+                    }
                     clearOutput();
+                    scheduleScroll();
                 }
                 function endStream() {
+                    if (DEBUG_MODE) {
+                        log("STREAM END");
+                    }
                     clearOutput();
                 }
+                function enqueueStream(name_header, content, chunk, replace = false, is_code_block = false) {
+                  streamQ.push({name_header, content, chunk, replace, is_code_block});
+                  if (!streamRAF) {
+                    streamRAF = requestAnimationFrame(drainStream);
+                  }
+                }                
+                function drainStream() {
+                  streamRAF = 0;
+                  while (streamQ.length) {
+                    const {name_header, content, chunk, replace, is_code_block} = streamQ.shift();
+                    appendStream(name_header, content, chunk, replace, is_code_block);
+                  }
+                }
                 function appendStream(name_header, content, chunk, replace = false, is_code_block = false) {
+                    dropIfDetached(); // clear references to detached elements
                     hideTips();
+                    if (DEBUG_MODE) {
+                        log("APPEND CHUNK: {" + chunk + "}, CONTENT: {"+content+"}, replace: " + replace + ", is_code_block: " + is_code_block);
+                    }
                     const element = getStreamContainer();
-                    doHighlight = true;
-                    doMath = true;
                     let msg;
                     if (element) {
                         let box = element.querySelector('.msg-box');
-                        let msg;
                         if (!box) {
                             box = document.createElement('div');
                             box.classList.add('msg-box');
                             box.classList.add('msg-bot');
                             if (name_header != '') {
                                 const name = document.createElement('div');
+                                name.classList.add('name-header');
+                                name.classList.add('name-bot');
                                 name.innerHTML = name_header;
                                 box.appendChild(name);
                             }
@@ -322,146 +414,77 @@ class Body:
                         }
                         if (msg) {
                             if (replace) {
-                                msg.innerHTML = sanitize(content);
-                                domLastCodeBlock = null; // reset last code block
-                                domLastParagraphBlock = null; // reset last paragraph block
+                                msg.replaceChildren();
+                                if (content) {
+                                  msg.insertAdjacentHTML('afterbegin', content);
+                                }
+                                let doMath = true;
+                                if (is_code_block) {
+                                    doMath = false;
+                                }
+                                highlightCode(doMath, msg);
+                                domLastCodeBlock = null;
+                                domLastParagraphBlock = null;
                             } else {
                                 if (is_code_block) {
                                     let lastCodeBlock;
                                     if (domLastCodeBlock) {
                                         lastCodeBlock = domLastCodeBlock;
                                     } else {
-                                        // find last code block in the message
                                         const msgBlocks = msg.querySelectorAll('pre');
                                         if (msgBlocks.length > 0) {
                                             lastCodeBlock = msgBlocks[msgBlocks.length - 1].querySelector('code');
                                         }
                                     }
                                     if (lastCodeBlock) {
-                                        // append to last code block
                                         lastCodeBlock.insertAdjacentHTML('beforeend', chunk);
                                         domLastCodeBlock = lastCodeBlock;
-                                        doHighlight = false;
                                     } else {
-                                        // if no code block, append chunk as normal text
-                                        msg.insertAdjacentHTML('beforeend', chunk); // append chunk
-                                        domLastCodeBlock = null; // reset last code block
+                                        msg.insertAdjacentHTML('beforeend', chunk);
+                                        domLastCodeBlock = null;
                                     }
-                                    doMath = false; // disable math rendering for code blocks
                                 } else {
-                                    domLastCodeBlock = null; // reset last code block
-                                    if (msg.innerHTML.trim().endsWith('</p>')) {
-                                        let lastParagraphBlock;
-                                        if (domLastParagraphBlock) {
-                                            lastParagraphBlock = domLastParagraphBlock;
-                                        } else {
-                                            const blocksParagraph = msg.querySelectorAll('p');
-                                            if (blocksParagraph.length > 0) {
-                                                lastParagraphBlock = blocksParagraph[blocksParagraph.length - 1];
-                                            }
-                                        }
-                                        if (lastParagraphBlock) {
-                                            domLastParagraphBlock = lastParagraphBlock; // store last paragraph block
-                                            lastParagraphBlock.insertAdjacentHTML('beforeend', chunk); // append to last paragraph
-                                        } else {
-                                            domLastParagraphBlock = null; // reset last paragraph block
-                                            msg.insertAdjacentHTML('beforeend', chunk); // append chunk
-                                        }                                        
+                                    domLastCodeBlock = null;
+                                    let p = (domLastParagraphBlock && msg.contains(domLastParagraphBlock))
+                                        ? domLastParagraphBlock
+                                        : (msg.lastElementChild && msg.lastElementChild.tagName === 'P'
+                                            ? msg.lastElementChild
+                                            : null);
+                                    if (p) {
+                                        p.insertAdjacentHTML('beforeend', chunk);
+                                        domLastParagraphBlock = p;
                                     } else {
-                                        domLastParagraphBlock = null; // reset last paragraph block
-                                        msg.insertAdjacentHTML('beforeend', chunk); // append chunk
+                                        msg.insertAdjacentHTML('beforeend', chunk);
+                                        const last = msg.lastElementChild;
+                                        domLastParagraphBlock = (last && last.tagName === 'P') ? last : null;
                                     }
-                                    doHighlight = false;
                                 }
                             }
                         }
                     }
-                    if (replace) {
-                        if (doHighlight) {
-                            highlightCode(doMath);  // with or without math
-                        }                        
-                    }    
-                    scrollToBottom();
-                }
-                function replaceOutput(name_header, content) {
-                    hideTips();
-                    const element = getStreamContainer();
-                    if (element) {
-                        let box = element.querySelector('.msg-box');
-                        let msg;
-                        if (!box) {
-                            box = document.createElement('div');
-                            box.classList.add('msg-box');
-                            box.classList.add('msg-bot');
-                            if (name_header != '') {
-                                const name = document.createElement('div');
-                                name.innerHTML = name_header;
-                                box.appendChild(name);
-                            }
-                            msg = document.createElement('div');
-                            msg.classList.add('msg');
-                            box.appendChild(msg);
-                            element.appendChild(box);
-                        } else {
-                            msg = box.querySelector('.msg');
-                        }
-                        if (msg) {
-                            msg.innerHTML = sanitize(content);
-                        }
-                    }
-                    highlightCode();
-                    scrollToBottom();
+                    scheduleScroll(true);
                 }
                 function nextStream() {
                     hideTips();
-                    // Clear the current stream output and copy it to the before output
-                    // 1. copy current output from _append_output_ to _append_output_before_
-                    // 2. clear _append_output_
-                    const element = document.getElementById('_append_output_');
-                    const elementBefore = document.getElementById('_append_output_before_');
+                    const element = els.appendOutput || document.getElementById('_append_output_');
+                    const elementBefore = els.appendOutputBefore || document.getElementById('_append_output_before_');
                     if (element && elementBefore) {
-                        elementBefore.insertAdjacentHTML('beforeend', element.innerHTML);
-                        element.innerHTML = ''; // clear current output
-                        domLastCodeBlock = null; // reset last code block
-                        domLastParagraphBlock = null; // reset last paragraph block
-                        scrollToBottom();
+                        const frag = document.createDocumentFragment();
+                        while (element.firstChild) {
+                            frag.appendChild(element.firstChild);
+                        }
+                        elementBefore.appendChild(frag);
+                        domLastCodeBlock = null;
+                        domLastParagraphBlock = null;
+                        scheduleScroll();
                     }
                 }
                 function clearStreamBefore() {
                     hideTips();
-                    const element = document.getElementById('_append_output_before_');
+                    const element = els.appendOutputBefore || document.getElementById('_append_output_before_');
                     if (element) {
                         element.replaceChildren();
                     }
-                }
-                function replaceOutput(bot_name, content) {     
-                    hideTips();   
-                    const element = getStreamContainer();
-                    if (element) {
-                        let box = element.querySelector('.msg-box');
-                        let msg;
-                        if (!box) {
-                            box = document.createElement('div');
-                            box.classList.add('msg-box');
-                            box.classList.add('msg-bot');
-                            const name = document.createElement('div');
-                            name.classList.add('name-header');
-                            name.classList.add('name-bot');
-                            name.textContent = bot_name;
-                            msg = document.createElement('div');
-                            msg.classList.add('msg');
-                            box.appendChild(name);
-                            box.appendChild(msg);
-                            element.appendChild(box);
-                        } else {
-                            msg = box.querySelector('.msg');
-                        }
-                        if (msg) {
-                            msg.innerHTML = sanitize(content);
-                        }
-                    }
-                    highlightCode();
-                    scrollToBottom();
                 }
                 function appendToolOutput(content) {
                     hideToolOutputLoader();
@@ -471,7 +494,7 @@ class Body:
                         const last = elements[elements.length - 1];
                         const contentEl = last.querySelector('.content');
                         if (contentEl) {
-                            contentEl.insertAdjacentHTML('beforeend', sanitize(content));
+                            contentEl.insertAdjacentHTML('beforeend', content);
                         }
                     }
                 }
@@ -483,7 +506,7 @@ class Body:
                         const last = elements[elements.length - 1];
                         const contentEl = last.querySelector('.content');
                         if (contentEl) {
-                            contentEl.innerHTML = sanitize(content);
+                            contentEl.innerHTML = content;
                         }
                     }
                 }
@@ -495,24 +518,15 @@ class Body:
                         const last = elements[elements.length - 1];
                         const contentEl = last.querySelector('.content');
                         if (contentEl) {
-                            contentEl.innerHTML = '';
+                            contentEl.replaceChildren();
                         }
                     }
                 }
                 function showToolOutputLoader() {
-                    return; // disabled
-                    const elements = document.querySelectorAll('.msg-bot');
-                    if (elements.length > 0) {
-                        const last = elements[elements.length - 1];
-                        const contentEl = last.querySelector('.spinner');
-                        if (contentEl) {
-                            contentEl.style.display = 'inline-block';
-                        }
-                    }
+                    return;
                 }
                 function hideToolOutputLoader() {
                     const elements = document.querySelectorAll('.msg-bot');
-                    // hide all loaders
                     if (elements.length > 0) {
                         elements.forEach(function(element) {
                             const contentEl = element.querySelector('.spinner');
@@ -561,19 +575,19 @@ class Body:
                     }
                 }
                 function replaceLive(content) {
-                    const element = document.getElementById('_append_live_');
+                    const element = els.appendLive || document.getElementById('_append_live_');
                     if (element) {
                         if (element.classList.contains('hidden')) {
                             element.classList.remove('hidden');
                             element.classList.add('visible');
                         }
-                        element.innerHTML = sanitize(content);
+                        element.innerHTML = content;
+                        highlightCode(true, element);
+                        scheduleScroll();
                     }
-                    highlightCode();
-                    scrollToBottom();
                 }
                 function updateFooter(content) {
-                    const element = document.getElementById('_footer_');
+                    const element = els.footer || document.getElementById('_footer_');
                     if (element) {
                         element.innerHTML = content;
                     }
@@ -581,39 +595,41 @@ class Body:
                 function clearNodes() {
                     prevScroll = 0;
                     clearStreamBefore();
-                    const element = document.getElementById('_nodes_');
+                    const element = els.nodes || document.getElementById('_nodes_');
                     if (element) {
-                        element.innerHTML = '';
+                        element.replaceChildren();
                         element.classList.add('empty_list');
                     }
+                    resetEphemeralDomRefs();
                 }
                 function clearInput() {
-                    const element = document.getElementById('_append_input_');
+                    const element = els.appendInput || document.getElementById('_append_input_');
                     if (element) {
-                        element.innerHTML = '';
+                        element.replaceChildren();
                     }
                 }
                 function clearOutput() {
                     clearStreamBefore();
                     domLastCodeBlock = null;
                     domLastParagraphBlock = null;
-                    const element = document.getElementById('_append_output_');
+                    const element = els.appendOutput || document.getElementById('_append_output_');
                     if (element) {
                         element.replaceChildren();
                     }
                 }
                 function clearLive() {
-                    const element = document.getElementById('_append_live_');
+                    const element = els.appendLive || document.getElementById('_append_live_');
                     if (element) {
                         if (element.classList.contains('visible')) {
                             element.classList.remove('visible');
                             element.classList.add('hidden');
-                            // timeout to clear content
                             setTimeout(function() {
-                                element.innerHTML = '';
+                                element.replaceChildren();
+                                resetEphemeralDomRefs();
                             }, 1000);
                         } else {
-                            element.innerHTML = '';
+                            element.replaceChildren();
+                            resetEphemeralDomRefs();
                         }
                     }
                 }
@@ -654,24 +670,25 @@ class Body:
                     }
                 }
                 function updateCSS(styles) {
-                    const style = document.createElement('style');
-                    style.innerHTML = styles;
-                    const oldStyle = document.querySelector('style');
-                    if (oldStyle) {
-                        oldStyle.remove();
+                    let style = document.getElementById('app-style');
+                    if (!style) {
+                        style = document.createElement('style');
+                        style.id = 'app-style';
+                        document.head.appendChild(style);
                     }
-                    document.head.appendChild(style);
+                    style.textContent = styles;
                 }
-                function restoreCollapsedCode() {
-                    const codeWrappers = document.querySelectorAll('.code-wrapper');
+                function restoreCollapsedCode(root) {
+                    const scope = root || document;
+                    const codeWrappers = scope.querySelectorAll('.code-wrapper');
                     codeWrappers.forEach(function(wrapper) {
                         const index = wrapper.getAttribute('data-index');
                         const localeCollapse = wrapper.getAttribute('data-locale-collapse');
                         const localeExpand = wrapper.getAttribute('data-locale-expand');
-                        const source = wrapper.querySelector('code');                
+                        const source = wrapper.querySelector('code');
                         if (source && collapsed_idx.includes(index)) {
                             source.style.display = 'none';
-                            const collapseBtn = wrapper.querySelector('.code-header-collapse');                    
+                            const collapseBtn = wrapper.querySelector('.code-header-collapse');
                             if (collapseBtn) {
                                 const collapseSpan = collapseBtn.querySelector('span');
                                 if (collapseSpan) {
@@ -718,10 +735,10 @@ class Body:
                 function setScrollPosition(pos) {
                     window.scrollTo(0, pos);
                     prevScroll = parseInt(pos);
-                }  
+                }
                 function showLoading() {
                     hideTips();
-                    const el = document.getElementById('_loader_');
+                    const el = els.loader || document.getElementById('_loader_');
                     if (el) {
                         if (el.classList.contains('hidden')) {
                             el.classList.remove('hidden');
@@ -730,7 +747,7 @@ class Body:
                     }
                 }
                 function hideLoading() {
-                    const el = document.getElementById('_loader_');
+                    const el = els.loader || document.getElementById('_loader_');
                     if (el) {
                         if (el.classList.contains('visible')) {
                             el.classList.remove('visible');
@@ -739,7 +756,15 @@ class Body:
                     }
                 }
                 document.addEventListener('DOMContentLoaded', function() {
-                    const container = document.getElementById('container');
+                    new QWebChannel(qt.webChannelTransport, function (channel) {
+                        bridge = channel.objects.bridge;
+                        bridge.chunk.connect((name, html, chunk, replace, isCode) => {
+                            appendStream(name, html, chunk, replace, isCode);
+                        });
+                        if (bridge.js_ready) bridge.js_ready();
+                    });
+                    initDomRefs();
+                    const container = els.container;
                     function addClassToMsg(id, className) {
                         const msgElement = document.getElementById('msg-bot-' + id);
                         if (msgElement) {
@@ -757,7 +782,7 @@ class Body:
                             const id = event.target.getAttribute('data-id');
                             addClassToMsg(id, 'msg-highlight');
                         }
-                    });        
+                    });
                     container.addEventListener('mouseout', function(event) {
                         if (event.target.classList.contains('action-img')) {
                             const id = event.target.getAttribute('data-id');
@@ -765,7 +790,6 @@ class Body:
                         }
                     });
                     container.addEventListener('click', function(event) {
-                        // btn copy
                         const copyButton = event.target.closest('.code-header-copy');
                         if (copyButton) {
                             event.preventDefault();
@@ -783,9 +807,8 @@ class Body:
                                         copySpan.textContent = localeCopy;
                                     }, 1000);
                                 }
-                            }                        
-                        }            
-                        // btn run
+                            }
+                        }
                         const runButton = event.target.closest('.code-header-run');
                         if (runButton) {
                             event.preventDefault();
@@ -794,9 +817,8 @@ class Body:
                             if (source) {
                                 const text = source.textContent || source.innerText;
                                 bridgeRunCode(text);
-                            }                        
-                        }    
-                        // btn preview
+                            }
+                        }
                         const previewButton = event.target.closest('.code-header-preview');
                         if (previewButton) {
                             event.preventDefault();
@@ -805,9 +827,8 @@ class Body:
                             if (source) {
                                 const text = source.textContent || source.innerText;
                                 bridgePreviewCode(text);
-                            }                        
+                            }
                         }
-                        // btn collapse
                         const collapseButton = event.target.closest('.code-header-collapse');
                         if (collapseButton) {
                             event.preventDefault();
@@ -843,7 +864,7 @@ class Body:
                         }
                     });
                 });
-                setTimeout(cycleTips, 20000);
+                setTimeout(cycleTips, 60000);  // after 60 seconds
                 </script>
             </head>
             <body """
@@ -852,7 +873,7 @@ class Body:
                 <div id="_nodes_" class="nodes empty_list"></div>
                 <div id="_append_input_" class="append_input"></div>
                 <div id="_append_output_before_" class="append_output"></div>
-                <div id="_append_output_" class="append_output"></div>            
+                <div id="_append_output_" class="append_output"></div>
                 <div id="_append_live_" class="append_live hidden"></div>
                 <div id="_footer_" class="footer"></div>
                 <div id="_loader_" class="loader-global hidden">
@@ -864,56 +885,7 @@ class Body:
             </html>
             """
 
-    def __init__(self, window=None):
-        """
-        HTML Body
-
-        :param window: Window instance
-        """
-        self.window = window
-        self.highlight = SyntaxHighlight(window)
-        self._tip_keys = tuple(f"output.tips.{i}" for i in range(1, self.NUM_TIPS + 1))
-
-
-    def is_timestamp_enabled(self) -> bool:
-        """
-        Check if timestamp is enabled
-
-        :return: True if timestamp is enabled
-        """
-        return self.window.core.config.get('output_timestamp')
-
-    def prepare_styles(self) -> str:
-        """
-        Prepare CSS styles
-
-        :return: CSS styles
-        """
-        syntax_dark = [
-            "dracula",
-            "fruity",
-            "github-dark",
-            "gruvbox-dark",
-            "inkpot",
-            "material",
-            "monokai",
-            "native",
-            "nord",
-            "nord-darker",
-            "one-dark",
-            "paraiso-dark",
-            "rrt",
-            "solarized-dark",
-            "stata-dark",
-            "vim",
-            "zenburn",
-        ]
-        syntax_style = self.window.core.config.get("render.code_syntax")
-        if syntax_style is None or syntax_style == "":
-            syntax_style = "default"
-        fonts_path = os.path.join(self.window.core.config.get_app_path(), "data", "fonts").replace("\\", "/")
-        # loader
-        stylesheet = """
+    _SPINNER = """
         .lds-ring {
           /* change color here */
           color: #1c4c5b
@@ -958,38 +930,74 @@ class Body:
           }
         }
         """
-        stylesheet += self.window.controller.theme.markdown.get_web_css().replace('%fonts%', fonts_path)
-        if syntax_style in syntax_dark:
-            stylesheet += "pre { color: #fff; }"
-        else:
-            stylesheet += "pre { color: #000; }"
 
-        return stylesheet + " " + self.highlight.get_style_defs()
+    def __init__(self, window=None):
+        """
+        HTML Body
 
-    def prepare_action_icons(
-            self,
-            ctx: CtxItem
-    ) -> str:
+        :param window: Window instance
+        """
+        self.window = window
+        self.highlight = SyntaxHighlight(window)
+        self._tip_keys = tuple(f"output.tips.{i}" for i in range(1, self.NUM_TIPS + 1))
+        self._syntax_dark = (
+            "dracula",
+            "fruity",
+            "github-dark",
+            "gruvbox-dark",
+            "inkpot",
+            "material",
+            "monokai",
+            "native",
+            "nord",
+            "nord-darker",
+            "one-dark",
+            "paraiso-dark",
+            "rrt",
+            "solarized-dark",
+            "stata-dark",
+            "vim",
+            "zenburn",
+        )
+
+
+    def is_timestamp_enabled(self) -> bool:
+        """
+        Check if timestamp is enabled
+
+        :return: True if timestamp is enabled
+        """
+        return self.window.core.config.get('output_timestamp')
+
+    def prepare_styles(self) -> str:
+        """
+        Prepare CSS styles
+
+        :return: CSS styles
+        """
+        cfg = self.window.core.config
+        fonts_path = os.path.join(cfg.get_app_path(), "data", "fonts").replace("\\", "/")
+        syntax_style = self.window.core.config.get("render.code_syntax") or "default"
+
+        theme_css = self.window.controller.theme.markdown.get_web_css().replace('%fonts%', fonts_path)
+        parts = [self._SPINNER, theme_css,
+                 "pre { color: #fff; }" if syntax_style in self._syntax_dark else "pre { color: #000; }",
+                 self.highlight.get_style_defs()]
+        return "\n".join(parts)
+
+    def prepare_action_icons(self, ctx: CtxItem) -> str:
         """
         Append action icons
 
         :param ctx: context item
         :return: HTML code
         """
-        html = ""
-        show_edit = True
-        # show_edit = self.window.core.config.get('ctx.edit_icons')
-        icons_html = "".join(self.get_action_icons(ctx, all=show_edit))
-        if icons_html != "":
-            extra = "<div class=\"action-icons\" data-id=\"{}\">{}</div>".format(ctx.id, icons_html)
-            html += extra
-        return html
+        icons_html = "".join(self.get_action_icons(ctx, all=True))
+        if icons_html:
+            return f'<div class="action-icons" data-id="{ctx.id}">{icons_html}</div>'
+        return ""
 
-    def get_action_icons(
-            self,
-            ctx: CtxItem,
-            all: bool = False
-    ) -> List[str]:
+    def get_action_icons(self, ctx: CtxItem, all: bool = False) -> List[str]:
         """
         Get action icons for context item
 
@@ -997,59 +1005,23 @@ class Body:
         :param all: True to show all icons
         :return: list of icons
         """
-        icons = []
-
-        # audio read
-        if ctx.output is not None and ctx.output != "":
+        icons: List[str] = []
+        if ctx.output:
+            cid = ctx.id
+            t = trans
             icons.append(
-                '<a href="extra-audio-read:{}" class="action-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                    ctx.id,
-                    ctx.id,
-                    self.get_icon("volume", trans("ctx.extra.audio"), ctx)
-                )
-            )
-            # copy ctx
+                f'<a href="extra-audio-read:{cid}" class="action-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("volume", t("ctx.extra.audio"), ctx)}</span></a>')
             icons.append(
-                '<a href="extra-copy:{}" class="action-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                    ctx.id,
-                    ctx.id,
-                    self.get_icon("copy", trans("ctx.extra.copy"), ctx)
-                )
-            )
-            # regen link
+                f'<a href="extra-copy:{cid}" class="action-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("copy", t("ctx.extra.copy"), ctx)}</span></a>')
             icons.append(
-                '<a href="extra-replay:{}" class="action-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                    ctx.id,
-                    ctx.id,
-                    self.get_icon("reload", trans("ctx.extra.reply"), ctx)
-                )
-            )
-            # edit link
+                f'<a href="extra-replay:{cid}" class="action-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("reload", t("ctx.extra.reply"), ctx)}</span></a>')
             icons.append(
-                '<a href="extra-edit:{}" class="action-icon edit-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                    ctx.id,
-                    ctx.id,
-                    self.get_icon("edit", trans("ctx.extra.edit"), ctx)
-                )
-            )
-            # delete link
+                f'<a href="extra-edit:{cid}" class="action-icon edit-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("edit", t("ctx.extra.edit"), ctx)}</span></a>')
             icons.append(
-                '<a href="extra-delete:{}" class="action-icon edit-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                    ctx.id,
-                    ctx.id,
-                    self.get_icon("delete", trans("ctx.extra.delete"), ctx)
-                )
-            )
-
-            # join link
-            if not self.window.core.ctx.is_first_item(ctx.id):
+                f'<a href="extra-delete:{cid}" class="action-icon edit-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("delete", t("ctx.extra.delete"), ctx)}</span></a>')
+            if not self.window.core.ctx.is_first_item(cid):
                 icons.append(
-                    '<a href="extra-join:{}" class="action-icon edit-icon" data-id="{}" role="button"><span class="cmd">{}</span></a>'.format(
-                        ctx.id,
-                        ctx.id,
-                        self.get_icon("playlist_add", trans("ctx.extra.join"), ctx)
-                    )
-                )
+                    f'<a href="extra-join:{cid}" class="action-icon edit-icon" data-id="{cid}" role="button"><span class="cmd">{self.get_icon("playlist_add", t("ctx.extra.join"), ctx)}</span></a>')
         return icons
 
     def get_icon(
@@ -1066,9 +1038,9 @@ class Body:
         :param item: context item
         :return: icon HTML
         """
-        icon = os.path.join(self.window.core.config.get_app_path(), "data", "icons", icon + ".svg")
-        return '<img src="file://{}" class="action-img" title="{}" alt="{}" data-id="{}">'.format(
-            icon, title, title, item.id)
+        app_path = self.window.core.config.get_app_path()
+        icon_path = os.path.join(app_path, "data", "icons", f"{icon}.svg")
+        return f'<img src="file://{icon_path}" class="action-img" title="{title}" alt="{title}" data-id="{item.id}">'
 
     def get_image_html(
             self,
@@ -1084,18 +1056,9 @@ class Body:
         :param num_all: number of all images
         :return: HTML code
         """
-        num_str = ""
-        if num is not None and num_all is not None and num_all > 1:
-            num_str = " [{}]".format(num)
         url, path = self.window.core.filesystem.extract_local_url(url)
         basename = os.path.basename(path)
-        return """<div class="extra-src-img-box" title="{url}"><div class="img-outer"><div class="img-wrapper"><a href="{url}"><img src="{path}" class="image"></a></div>
-        <a href="{url}" class="title">{title}</a></div></div>""". \
-            format(prefix=trans('chat.prefix.img'),
-                   url=url,
-                   title=basename,
-                   path=path,
-                   num=num_str)
+        return f'<div class="extra-src-img-box" title="{url}"><div class="img-outer"><div class="img-wrapper"><a href="{url}"><img src="{path}" class="image"></a></div><a href="{url}" class="title">{basename}</a></div></div><br/>'
 
     def get_url_html(
             self,
@@ -1111,19 +1074,11 @@ class Body:
         :param num_all: number of all URLs
         :return: HTML code
         """
-        icon_path = os.path.join(
-            self.window.core.config.get_app_path(),
-            "data", "icons", "language.svg"
-        )
-        icon = '<img src="file://{}" class="extra-src-icon">'.format(icon_path)
-        num_str = ""
-        if num is not None and num_all is not None and num_all > 1:
-            num_str = " [{}]".format(num)
-        return """{icon}<a href="{url}" title="{url}">{url}</a> <small>{num}</small>""". \
-            format(url=url,
-                   num=num_str,
-                   icon=icon,
-            )
+        app_path = self.window.core.config.get_app_path()
+        icon_path = os.path.join(app_path, "data", "icons", "language.svg").replace("\\", "/")
+        icon = f'<img src="file://{icon_path}" class="extra-src-icon">'
+        num_str = f" [{num}]" if (num is not None and num_all is not None and num_all > 1) else ""
+        return f'{icon}<a href="{url}" title="{url}">{url}</a> <small>{num_str}</small>'
 
     def get_docs_html(self, docs: List[Dict]) -> str:
         """
@@ -1132,45 +1087,34 @@ class Body:
         :param docs: list of document metadata
         :return: HTML code
         """
-        html = ""
-        html_sources = ""
+        html_parts: List[str] = []
+        src_parts: List[str] = []
         num = 1
-        max = 3
+        limit = 3
+
         try:
             for item in docs:
                 for uuid, doc_json in item.items():
-                    """
-                    Example doc (file metadata):
-                    {'a2c7af6d-3c34-4c28-bf2d-6161e7fb525e': {
-                        'file_path': '/home/user/.config/pygpt-net/data/my_cars.txt',
-                        'file_name': '/home/user/.config/pygpt-net/data/my_cars.txt', 'file_type': 'text/plain',
-                        'file_size': 28, 'creation_date': '2024-03-03', 'last_modified_date': '2024-03-03',
-                        'last_accessed_date': '2024-03-03'}}
-                    """
-                    doc_parts = []
-                    for key in doc_json:
-                        doc_parts.append("<b>{}:</b> {}".format(key, doc_json[key]))
-                    html_sources += "<p><small>[{}] {}: {}</small></p>".format(num, uuid, ", ".join(doc_parts))
+                    entries = ", ".join(f"<b>{k}:</b> {doc_json[k]}" for k in doc_json)
+                    src_parts.append(f"<p><small>[{num}] {uuid}: {entries}</small></p>")
                     num += 1
-                if num >= max:
+                    if num >= limit:
+                        break
+                if num >= limit:
                     break
-        except Exception as e:
+        except Exception:
             pass
 
-        icon_path = os.path.join(
-            self.window.core.config.get_app_path(),
-            "data", "icons", "db.svg"
-        )
-        icon = '<img src="file://{}" class="extra-src-icon">'.format(icon_path)
-        if html_sources != "":
-            html += "<p>{icon}<small><b>{prefix}:</b></small></p>".format(
-                prefix=trans('chat.prefix.doc'),
-                icon=icon,
-            )
-            html += "<div class=\"cmd\">"
-            html += "<p>" + html_sources + "</p>"
-            html += "</div> "
-        return html
+        if src_parts:
+            app_path = self.window.core.config.get_app_path()
+            icon_path = os.path.join(app_path, "data", "icons", "db.svg").replace("\\", "/")
+            icon = f'<img src="file://{icon_path}" class="extra-src-icon">'
+            html_parts.append(f'<p>{icon}<small><b>{trans("chat.prefix.doc")}:</b></small></p>')
+            html_parts.append('<div class="cmd">')
+            html_parts.append(f"<p>{''.join(src_parts)}</p>")
+            html_parts.append("</div> ")
+
+        return "".join(html_parts)
 
     def get_file_html(
             self,
@@ -1186,21 +1130,12 @@ class Body:
         :param num_all: number of all files
         :return: HTML code
         """
-        icon_path = os.path.join(
-            self.window.core.config.get_app_path(),
-            "data", "icons", "attachments.svg"
-        )
-        icon = '<img src="file://{}" class="extra-src-icon">'.format(icon_path)
-        num_str = ""
-        if num is not None and num_all is not None and num_all > 1:
-            num_str = " [{}]".format(num)
+        app_path = self.window.core.config.get_app_path()
+        icon_path = os.path.join(app_path, "data", "icons", "attachments.svg").replace("\\", "/")
+        icon = f'<img src="file://{icon_path}" class="extra-src-icon">'
+        num_str = f" [{num}]" if (num is not None and num_all is not None and num_all > 1) else ""
         url, path = self.window.core.filesystem.extract_local_url(url)
-        return """{icon} <b>{num}</b> <a href="{url}">{path}</a>""". \
-            format(url=url,
-                   path=path,
-                   num=num_str,
-                   icon=icon,
-            )
+        return f'{icon} <b>{num_str}</b> <a href="{url}">{path}</a>'
 
     def prepare_tool_extra(self, ctx: CtxItem) -> str:
         """
@@ -1209,40 +1144,41 @@ class Body:
         :param ctx: context item
         :return: HTML code
         """
-        html = ""
-        if ctx.extra is not None and ctx.extra != "":
-            html += "<div class=\"msg-extra\">"
+        extra = ctx.extra
+        if not extra:
+            return ""
 
-            # single tool
-            if "plugin" in ctx.extra:
+        parts: List[str] = ['<div class="msg-extra">']
+
+        if "plugin" in extra:
+            event = Event(Event.TOOL_OUTPUT_RENDER, {
+                'tool': extra["plugin"],
+                'html': '',
+                'multiple': False,
+                'content': extra,
+            })
+            event.ctx = ctx
+            self.window.dispatch(event, all=True)
+            if event.data['html']:
+                parts.append(f'<div class="tool-output-block">{event.data["html"]}</div>')
+
+        elif "tool_output" in extra and isinstance(extra["tool_output"], list):
+            for tool in extra["tool_output"]:
+                if "plugin" not in tool:
+                    continue
                 event = Event(Event.TOOL_OUTPUT_RENDER, {
-                    'tool': ctx.extra["plugin"],
+                    'tool': tool["plugin"],
                     'html': '',
-                    'multiple': False,
-                    'content': ctx.extra,  # tool output
+                    'multiple': True,
+                    'content': tool,
                 })
                 event.ctx = ctx
-                self.window.dispatch(event, all=True)  # handle by plugins
+                self.window.dispatch(event, all=True)
                 if event.data['html']:
-                    html += "<div class=\"tool-output-block\">" + event.data['html'] + "</div>"
+                    parts.append(f'<div class="tool-output-block">{event.data["html"]}</div>')
 
-            # multiple tools, list
-            elif "tool_output" in ctx.extra and isinstance(ctx.extra["tool_output"], list):
-                for key, tool in enumerate(ctx.extra["tool_output"]):
-                    if "plugin" not in tool:
-                        continue
-                    event = Event(Event.TOOL_OUTPUT_RENDER, {
-                        'tool': tool["plugin"],
-                        'html': '',
-                        'multiple': True,
-                        'content': tool,  # tool output[]
-                    })
-                    event.ctx = ctx
-                    self.window.dispatch(event, all=True)
-                    if event.data['html']:
-                        html += "<div class=\"tool-output-block\">" + event.data['html'] + "</div>"
-            html += "</div>"
-        return html
+        parts.append("</div>")
+        return "".join(parts)
 
     def get_all_tips(self) -> str:
         """
@@ -1276,11 +1212,11 @@ class Body:
         if self.is_timestamp_enabled():
             classes.append("display-timestamp")
         classes_str = f' class="{" ".join(classes)}"' if classes else ""
-        styles_css = self.prepare_styles()  # CSS string
-        tips_json = self.get_all_tips()  # JSON string
+        styles_css = self.prepare_styles()
+        tips_json = self.get_all_tips()
 
         return ''.join((
-           self. _HTML_P0,
+            self._HTML_P0,
             styles_css,
             self._HTML_P1,
             str(pid),

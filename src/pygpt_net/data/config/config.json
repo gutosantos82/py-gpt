@@ -1,8 +1,8 @@
 {
   "__meta__": {
-    "version": "2.5.98",
-    "app.version": "2.5.98",
-    "updated_at": "2025-08-12T00:00:00"
+    "version": "2.6.17",
+    "app.version": "2.6.17",
+    "updated_at": "2025-08-21T00:00:00"
   },
   "access.audio.event.speech": false,
   "access.audio.event.speech.disabled": [],
@@ -50,6 +50,7 @@
   "agent.func_call.native": false,
   "agent.goal.notify": false,
   "agent.idx": "base",
+  "agent.idx.auto_retrieve": true,
   "agent.iterations": 3,
   "agent.llama.idx": "base",
   "agent.llama.loop.enabled": false,
@@ -175,11 +176,11 @@
   "download.dir": "download",
   "experts.func_call.native": false,
   "experts.mode": "chat",
-  "experts.use_agent": false,
+  "experts.use_agent": true,
   "experts.api_use_responses": false,
   "experts.internal.api_use_responses": false,
-  "font_size": 12,
-  "font_size.input": 12,
+  "font_size": 16,
+  "font_size.input": 16,
   "font_size.ctx": 12,
   "font_size.toolbox": 12,
   "func_call.native": true,

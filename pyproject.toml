@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pygpt-net"
-version = "2.5.98"
+version = "2.6.17-post1"
 description = "Desktop AI Assistant powered by: OpenAI GPT-5, o1, o3, GPT-4, Gemini, Claude, Grok, DeepSeek, and other models supported by Llama Index, and Ollama. Chatbot, agents, completion, image generation, vision analysis, speech-to-text, plugins, internet access, file handling, command execution and more."
 authors = ["Marcin Szczyglinski <info@pygpt.net>"]
 license = "MIT"
@@ -25,6 +25,10 @@ include = [
 	"README.md",
 ]
 
+[tool.poetry.urls]
+Changelog = "https://github.com/szczyglis-dev/py-gpt/blob/master/CHANGELOG.md"
+Issues = "https://github.com/szczyglis-dev/py-gpt/issues"
+
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
 anthropic = "^0.54.0"
@@ -35,8 +39,10 @@ chromadb = "^0.5.20"
 croniter = "^2.0.7"
 docker = "^7.1.0"
 docx2txt = "^0.8"
-google-generativeai = "^0.8.5"
 EbookLib = "^0.18"
+gkeepapi = "^0.15.1"
+google-api-python-client = "^2.173.0"
+google-generativeai = "^0.8.5"
 httpx = "^0.28.1"
 httpx-socks = "^0.10.1"
 ipykernel = "^6.29.5"
@@ -86,6 +92,7 @@ packaging = "^24.2"
 pandas = "^2.2.3"
 pillow = "^10.4.0"
 pinecone-client = "^3.2.2"
+psutil = "^7.0.0"
 PyAudio = "^0.2.14"
 PyAutoGUI = "^0.9.54"
 Pygments = "^2.19.2"

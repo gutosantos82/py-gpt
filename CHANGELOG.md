@@ -1,5 +1,104 @@
 # CHANGELOG
 
+## 2.6.17 (2025-08-21)
+
+- Optimized profile switching.
+- Fixed: setting initial splitter size on first launch.
+- Added smoother view reload.
+
+## 2.6.16 (2025-08-20)
+
+- Fixed: Attachment string joining.
+- Improved expert function calls.
+- Added sorting to the plugin list.
+
+## 2.6.15 (2025-08-20)
+
+- Added: do not change the context menu font size in text editing.
+- Added: do not reload context items on tab change if already loaded.
+- Fixed: appending of names and avatars in the stream chunk.
+
+## 2.6.14 (2025-08-19)
+
+- Fixed: Agent evaluation tool runs even if tools are disabled.
+- Extended agent response evaluation by providing the full context of the output.
+
+## 2.6.13 (2025-08-19)
+
+- Fix: Do not load the index in experts if it is not provided.
+- Fix: Load remote images in the webview.
+- Fix: Presets list refresh.
+- Optimize context items reload.
+
+## 2.6.12 (2025-08-19)
+
+- Optimized web renderer memory cleanup.
+
+## 2.6.11 (2025-08-18)
+
+- Added the ability to close the dialog window with the Esc key.
+- Made context item deletion without output refresh.
+- Optimizations.
+
+## 2.6.10 (2025-08-17)
+
+- Enhanced the handling of the context list.
+- Integrated RAG into OpenAI Agents.
+- Enhanced RAG management in Agents.
+- Added an option: Config -> Agents -> General -> Auto-retrieve additional context from RAG.
+- Included Google Docs, Maps, and Colab in the Google plugin.
+
+## 2.6.9 (2025-08-17)
+
+- Added two new agents for LlamaIndex and OpenAI: Supervisor and Worker (beta).
+
+## 2.6.8 (2025-08-16)
+
+- Fixed: updated paragraph color on theme switch.
+- Added switching to duplicated preset after creation.
+- Reduced delay after selecting context.
+- Optimized rendering of mathematical formulas.
+
+## 2.6.7 (2025-08-16)
+
+- Fix: missing entity sanitize.
+
+## 2.6.6 (2025-08-16)
+
+- Output rendering optimization.
+
+## 2.6.5 (2025-08-16)
+
+- Fix: crash when creating a context in a new group.
+- Fix: high CPU usage after switching profiles.
+
+## 2.6.4 (2025-08-15)
+
+- Fix: tool execution in OpenAI Agents.
+- Optimizations.
+
+## 2.6.3 (2025-08-15)
+
+- Optimized streaming and CPU usage.
+- Fixed crash on set label color and ctx duplicate.
+
+## 2.6.2 (2025-08-15)
+
+- Added plugins (beta): Google, Facebook, X/Twitter, Telegram, Slack, GitHub, Bitbucket.
+
+## 2.6.1 (2025-08-14)
+
+- LlamaIndex Agents refactored to Workflows.
+
+## 2.6.0 (2025-08-13)
+
+- Added split responses to the OpenAI Agents in non-streaming mode.
+- Disabled auto-scroll when manually scrolled to the top.
+- Increased scrollbar width in the light theme.
+- Optimized the clearing of the streaming buffer.
+- Optimized imports.
+- Made CSS improvements.
+
 ## 2.5.98 (2025-08-12)
 
 - Added support for GPT-5 in LlamaIndex/Chat with Files mode.

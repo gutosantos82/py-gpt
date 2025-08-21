@@ -6,12 +6,10 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.07.30 00:00:00                  #
+# Updated Date: 2025.08.14 13:00:00                  #
 # ================================================== #
 
 from typing import Dict, Any
-
-from llama_index.agent.openai import OpenAIAssistantAgent as Agent
 
 from pygpt_net.core.types import (
     AGENT_MODE_ASSISTANT,
@@ -19,7 +17,7 @@ from pygpt_net.core.types import (
 )
 from pygpt_net.core.bridge.context import BridgeContext
 
-from ..base import BaseAgent
+from ...base import BaseAgent
 
 
 class OpenAIAssistantAgent(BaseAgent):
@@ -28,7 +26,7 @@ class OpenAIAssistantAgent(BaseAgent):
         self.id = "openai_assistant"
         self.type = AGENT_TYPE_LLAMA
         self.mode = AGENT_MODE_ASSISTANT
-        self.name = "OpenAI Assistant"
+        self.name = "OpenAI Assistant (Legacy)"
 
     def get_agent(self, window, kwargs: Dict[str, Any]):
         """
@@ -38,11 +36,14 @@ class OpenAIAssistantAgent(BaseAgent):
         :param kwargs: keyword arguments
         :return: Agent provider instance
         """
+        from llama_index.agent.openai import OpenAIAssistantAgent as Agent
+
         context = kwargs.get("context", BridgeContext())
+        preset = context.preset
         tools = kwargs.get("tools", [])
         verbose = kwargs.get("verbose", False)
         model = context.model
-        system_prompt = context.system_prompt
+        system_prompt = self.get_option(preset, "base", "prompt")
         ctx = context.ctx
         thread_id = None
         assistant_id = None
@@ -61,7 +62,7 @@ class OpenAIAssistantAgent(BaseAgent):
                 thread_id = ctx.meta.thread
 
         # get assistant_id from preset
-        preset_assistant_id = context.assistant_id
+        preset_assistant_id = self.get_option(preset, "base", "assistant_id")
         if (preset_assistant_id is not None
                 and preset_assistant_id != ""):
             assistant_id = preset_assistant_id  # override assistant_id from ctx
@@ -82,3 +83,34 @@ class OpenAIAssistantAgent(BaseAgent):
             kwargs["openai_tools"] = [{"type": "code_interpreter"}, {"type": "file_search"}]
             kwargs["model"] = model.id
             return Agent.from_new(**kwargs)
+
+    def get_options(self) -> Dict[str, Any]:
+        """
+        Return Agent options
+
+        :return: dict of options
+        """
+        return {
+            "base": {
+                "label": "Base prompt",
+                "options": {
+                    "prompt": {
+                        "type": "textarea",
+                        "label": "Prompt",
+                        "description": "Base prompt",
+                        "default": "",
+                    },
+                }
+            },
+            "assistant": {
+                "label": "Assistant config",
+                "options": {
+                    "assistant_id": {
+                        "type": "text",
+                        "label": "Assistant ID",
+                        "description": "OpenAI Assistant ID, asst_abcd1234...",
+                        "default": "",
+                    },
+                }
+            },
+        }

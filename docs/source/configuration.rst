@@ -295,6 +295,10 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 **General**
 
+* ``Verbose`` - enables verbose mode.
+
+* ``Auto retrieve additional context from RAG``: Auto retrieve additional context from RAG at the beginning if the index is provided.
+
 * ``Display a tray notification when the goal is achieved.``: If enabled, a notification will be displayed after goal achieved / finished run.
 
 **Agents (LlamaIndex / OpenAI)**
@@ -305,9 +309,7 @@ Enable/disable remote tools, like Web Search or Image generation to use in OpenA
 
 * ``Append and compare previous evaluation prompt in next evaluation`` - If enabled, previous improvement prompt will be checked in next eval in loop, default: False
 
-* ``Verbose`` - enables verbose mode.
-
-* ``Split response messages`` - Split response messages to separated context items in OpenAI Agents mode. Stream mode only.
+* ``Split response messages`` - Split response messages to separated context items in OpenAI Agents mode.
 
 settings.agent.openai.response.split = Split response messages
 settings.agent.openai.response.split.desc = Split re
@@ -318,7 +320,7 @@ settings.agent.openai.response.split.desc = Split re
 
 * ``Index to use``: Only if sub-mode is llama_index (Chat with files), choose the index to use in both Agent and Expert modes.
 
-* ``Use native API function calls``: Use API function calls to run commands from plugins instead of using command prompts - Autonomous mode only, default: False
+* ``Use native API function calls``: Use API function calls to run tools from plugins instead of using command prompts - Autonomous mode only, default: False
 
 * ``Use Responses API in Agent mode``: Use Responses API instead of ChatCompletions API in Agent (autonomous) mode. OpenAI models only. Default: False
 
@@ -326,9 +328,9 @@ settings.agent.openai.response.split.desc = Split re
 
 * ``Sub-mode for experts``: Sub-mode to use in Experts mode (chat, llama_index, etc.). Default: chat.
 
-* ``Use planner agent for expert reasoning``: If enabled, the Planner agent will be used for expert calls and expert reasoning. Default: False
+* ``Use agent for expert reasoning``: If enabled, the ReAct agent will be used for expert calls and expert reasoning. Default: True
 
-* ``Use native API function calls``: Use API function calls to run commands from plugins instead of using command prompts - Experts only, default: False
+* ``Use native API function calls``: Use API function calls to run tools from plugins instead of using command prompts - Experts only, default: False
 
 * ``Use Responses API in Experts mode (master)``: Use Responses API instead of ChatCompletions API in Experts (master model). OpenAI models only. Default: False
 

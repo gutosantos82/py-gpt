@@ -2243,6 +2243,36 @@ class Patch:
                     data["agent.openai.response.split"] = True
                 updated = True
 
+            # < 2.6.0
+            if old < parse_version("2.6.0"):
+                print("Migrating config from < 2.6.0...")
+                self.window.core.updater.patch_css('style.light.css', True)  # scrollbar, calendar fix
+                self.window.core.updater.patch_css('style.dark.css', True)  # calendar fix
+                updated = True
+
+            # < 2.6.8
+            if old < parse_version("2.6.8"):
+                print("Migrating config from < 2.6.8...")
+                self.window.core.updater.patch_css('web-chatgpt.light.css', True)  # p color
+                self.window.core.updater.patch_css('web-chatgpt.dark.css', True)  # p color
+                self.window.core.updater.patch_css('web-chatgpt_wide.light.css', True)  # p color
+                self.window.core.updater.patch_css('web-chatgpt_wide.dark.css', True)  # p color
+                self.window.core.updater.patch_css('style.light.css', True)  # tree
+                self.window.core.updater.patch_css('style.dark.css', True)  # tree
+                updated = True
+
+            # < 2.6.10
+            if old < parse_version("2.6.10"):
+                print("Migrating config from < 2.6.10...")
+                if "agent.idx.auto_retrieve" not in data:
+                    data["agent.idx.auto_retrieve"] = True
+                if 'google' in data['plugins'] \
+                        and 'oauth_scopes' in data['plugins']['google']:
+                    # add documents scope
+                    if "https://www.googleapis.com/auth/documents" not in data['plugins']['google']['oauth_scopes']:
+                        data['plugins']['google']['oauth_scopes'] += " https://www.googleapis.com/auth/documents"
+                updated = True
+
         # update file
         migrated = False
         if updated:

@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.08 05:00:00                  #
+# Updated Date: 2025.08.19 07:00:00                  #
 # ================================================== #
 
 from openai import OpenAI
@@ -62,6 +62,8 @@ class Gpt:
         self.tools = Tools(window)
         self.vision = Vision(window)
         self.client = None
+        self.locked = False
+        self.last_client_args = None  # last client args used, for debug purposes
 
     def get_client(
             self,
@@ -77,7 +79,15 @@ class Gpt:
         """
         # update client args by mode and model
         args = self.window.core.models.prepare_client_args(mode, model)
-        self.client = OpenAI(**args)
+        if self.client is None or self.last_client_args != args:
+            if self.client is not None:
+                try:
+                    self.client.close()  # close previous client if exists
+                except Exception as e:
+                    self.window.core.debug.log(e)
+                    print("Error closing previous GPT client:", e)
+            self.client = OpenAI(**args)
+        self.last_client_args = args
         return self.client
 
     def call(self, context: BridgeContext, extra: dict = None) -> bool:
@@ -233,9 +243,12 @@ class Gpt:
         if context.request:
             context.stream = False
             context.mode = "chat"  # fake mode for redirect
-            result = self.call(context, extra)
+            self.locked = True
+            self.call(context, extra)
+            self.locked = False
             return context.ctx.output
 
+        self.locked = True
         ctx = context.ctx
         mode = context.mode
         prompt = context.prompt
@@ -291,7 +304,21 @@ class Gpt:
         except Exception as e:
             self.window.core.debug.log(e)
             print("Error in GPT quick call: " + str(e))
+        finally:
+            self.locked = False
 
     def stop(self):
-        """Stop OpenAI API"""
+        """On global event stop"""
         pass
+
+    def close(self):
+        """Close OpenAI client"""
+        if self.locked:
+            return
+        if self.client is not None:
+            try:
+                pass
+                # self.client.close()
+            except Exception as e:
+                self.window.core.debug.log(e)
+                print("Error closing GPT client:", e)

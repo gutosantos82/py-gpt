@@ -6,7 +6,7 @@
 # GitHub:  https://github.com/szczyglis-dev/py-gpt   #
 # MIT License                                        #
 # Created By  : Marcin Szczygliński                  #
-# Updated Date: 2025.08.11 19:00:00                  #
+# Updated Date: 2025.08.19 07:00:00                  #
 # ================================================== #
 
 from typing import Dict, Any
@@ -164,14 +164,16 @@ class Response:
         :param context: BridgeContext
         :param extra: Extra data
         """
+        global_mode = self.window.core.config.get('mode', MODE_AGENT_LLAMA)
         ctx = context.ctx
         if self.window.controller.kernel.stopped():
             output = ctx.output
             if output and has_unclosed_code_tag(output):
                 ctx.output += "\n```"
             ctx.msg_id = None
-            self.window.core.ctx.add(ctx)  # store context to prevent current output from being lost
-            self.window.controller.ctx.prepare_name(ctx)  # summarize if not yet
+            if ctx.id is None:
+                self.window.core.ctx.add(ctx)  # store context to prevent current output from being lost
+                self.window.controller.ctx.prepare_name(ctx)  # summarize if not yet
 
             # finish render
             self.window.dispatch(AppEvent(AppEvent.CTX_END))  # app event
@@ -227,7 +229,8 @@ class Response:
         }
         event = RenderEvent(RenderEvent.INPUT_APPEND, data)
         self.window.dispatch(event)
-        self.window.core.ctx.add(ctx)
+        if ctx.id is None:
+            self.window.core.ctx.add(ctx)
         self.window.controller.ctx.update(
             reload=True,
             all=False,
@@ -235,7 +238,7 @@ class Response:
         self.window.core.ctx.update_item(ctx)
 
         # update ctx meta
-        if mode in [MODE_AGENT_LLAMA, MODE_AGENT_OPENAI] and ctx.meta is not None:
+        if mode in (MODE_AGENT_LLAMA, MODE_AGENT_OPENAI) and ctx.meta is not None:
             self.window.core.ctx.replace(ctx.meta)
             self.window.core.ctx.save(ctx.meta.id)
             # update preset if exists
@@ -248,9 +251,9 @@ class Response:
         try:
             self.window.controller.chat.output.handle(ctx, mode, stream)
         except Exception as e:
-            self.window.controller.chat.log("Output ERROR: {}".format(e))  # log
+            self.window.controller.chat.log(f"Output ERROR: {e}")  # log
             self.window.controller.chat.handle_error(e)
-            print("Error in append text: " + str(e))
+            print(f"Error in append text: {e}")
 
         # post-handle, execute cmd, etc.
         self.window.controller.chat.output.post_handle(ctx, mode, stream, reply, internal)
@@ -262,10 +265,18 @@ class Response:
         self.window.dispatch(event)  # show cmd waiting
         self.window.controller.chat.output.handle_end(ctx, mode)  # handle end.
 
-        event = RenderEvent(RenderEvent.RELOAD)
+        data = {
+            "meta": ctx.meta,
+            "ctx": ctx,
+            "stream": self.window.core.config.get("stream", False),
+        }
+        event = RenderEvent(RenderEvent.END, data)
         self.window.dispatch(event)
 
         # if continue reasoning
+        if global_mode not in (MODE_AGENT_LLAMA, MODE_AGENT_OPENAI):
+            return  # no agent mode, nothing to do
+
         if ctx.extra is None or (type(ctx.extra) == dict and "agent_finish" not in ctx.extra):
             self.window.update_status(trans("status.agent.reasoning"))
             self.window.controller.chat.common.lock_input()  # lock input, re-enable stop button
@@ -308,10 +319,10 @@ class Response:
         :param extra: Extra data
         """
         err = extra.get("error") if "error" in extra else None
-        self.window.controller.chat.log("Output ERROR: {}".format(err))  # log
+        self.window.controller.chat.log(f"Output ERROR: {err}")  # log
         self.window.controller.chat.handle_error(err)
         self.window.controller.chat.common.unlock_input()  # unlock input
-        print("Error in sending text: " + str(err))
+        print(f"Error in sending text: {err}")
         # set state to: error
         self.window.dispatch(KernelEvent(KernelEvent.STATE_ERROR, {
             "id": "chat",
