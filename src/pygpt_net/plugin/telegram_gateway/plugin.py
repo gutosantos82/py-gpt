@@ -96,6 +96,23 @@ class Plugin(BasePlugin):
     def init_options(self):
         """Initialize options"""
         self.config.from_defaults(self)
+        
+        # Add timeout configuration options
+        self.add_option(
+            "response_timeout",
+            type="int",
+            value=60,
+            label="Response timeout (seconds)",
+            description="Maximum time to wait for PyGPT response before timing out",
+        )
+        
+        self.add_option(
+            "idle_window",
+            type="float", 
+            value=2.0,
+            label="Idle window (seconds)",
+            description="Time to wait after last response before considering completion",
+        )
 
     # ---------- PyGPT lifecycle ----------
 
@@ -121,6 +138,11 @@ class Plugin(BasePlugin):
             # User clicked "Save" in Plugins → Settings
             log.info("[TelegramGateway] Settings changed; restarting bot")
             self._restart_bot()
+
+        elif name == Event.FORCE_STOP:
+            # Application is exiting - ensure bot is properly stopped
+            log.info("[TelegramGateway] FORCE_STOP received; stopping bot")
+            self._stop_bot()
 
         # (Optional) If you want to expose a /syntax or inline commands,
         # you can also handle CMD_SYNTAX / CMD_SYNTAX_INLINE here and append help.
@@ -691,8 +713,12 @@ class Plugin(BasePlugin):
         self._text_send_on_main(user_text, internal=True)
 
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + 120.0  # seconds
-        idle_window = 3.0
+        
+        # Use configurable timeout values  
+        timeout = max(30, int(self.get_option_value("response_timeout") or 60))  # Min 30 seconds
+        idle_window = max(1.0, float(self.get_option_value("idle_window") or 3.0))  # Min 1 second, default 3
+        
+        deadline = loop.time() + timeout
         kernel = self.window.controller.kernel
 
         last_seen = loop.time()
@@ -703,7 +729,10 @@ class Plugin(BasePlugin):
         prev_images_len = len(getattr(curr_ctx, "images", []) or []) if curr_ctx else 0
 
         while loop.time() < deadline:
+            # Check for context changes (this is the critical detection logic)
             last_ctx = self.window.core.ctx.get_last_item()
+            
+            # Context switching detection - check if we have a new context 
             if (
                 last_ctx is not None
                 and last_ctx is not curr_ctx
@@ -724,10 +753,12 @@ class Plugin(BasePlugin):
                 prev_results_len = 0
                 prev_images_len = 0
 
-            curr_output = getattr(curr_ctx, "output", None)
-            curr_results = getattr(curr_ctx, "results", []) or []
-            curr_images = getattr(curr_ctx, "images", []) or []
-            curr_extra = getattr(curr_ctx, "extra", {}) or {}
+            # Get current state - this must work with the original PyGPT context structure
+            curr_output = getattr(curr_ctx, "output", None) if curr_ctx else None
+            curr_results = getattr(curr_ctx, "results", []) or [] if curr_ctx else []
+            curr_images = getattr(curr_ctx, "images", []) or [] if curr_ctx else []
+            curr_extra = getattr(curr_ctx, "extra", {}) or {} if curr_ctx else {}
+            
             agent_finish = (
                 isinstance(curr_extra, dict) and curr_extra.get("agent_finish")
             )
@@ -735,10 +766,12 @@ class Plugin(BasePlugin):
             new_texts: list[str] = []
             new_images: list[str] = []
 
+            # Detect new output text
             if curr_output != prev_output and curr_output is not None:
                 new_texts.append(str(curr_output))
                 prev_output = curr_output
 
+            # Detect new results
             if len(curr_results) > prev_results_len:
                 for item in curr_results[prev_results_len:]:
                     if isinstance(item, dict):
@@ -748,10 +781,12 @@ class Plugin(BasePlugin):
                         new_texts.append(str(item))
                 prev_results_len = len(curr_results)
 
+            # Detect new images
             if len(curr_images) > prev_images_len:
                 new_images = list(curr_images[prev_images_len:])
                 prev_images_len = len(curr_images)
 
+            # If we found new content, yield it and update state
             if new_texts or new_images:
                 log.info(
                     "[TelegramGateway] Yielding %s new texts and %s new images",
@@ -762,21 +797,25 @@ class Plugin(BasePlugin):
                 got_any = True
                 yield new_texts, new_images
 
+            # Check if we should exit (only after we have some content)
             if got_any and kernel.state != kernel.STATE_BUSY and (loop.time() - last_seen) > idle_window:
-                log.info("[TelegramGateway] Kernel not busy; finishing")
+                log.info("[TelegramGateway] Kernel not busy and idle; finishing")
                 break
 
             if agent_finish:
                 log.info("[TelegramGateway] Agent signaled finish; exiting")
                 break
 
+            # Also check for extended idle time as fallback
             if got_any and (loop.time() - last_seen) > idle_window:
-                log.info("[TelegramGateway] Idle window expired; finishing")
+                log.info("[TelegramGateway] Idle window expired; finishing") 
                 break
 
             await asyncio.sleep(0.25)
 
-        log.info("[TelegramGateway] _ask_pygpt done")
+        log.info("[TelegramGateway] _ask_pygpt done (got_any: %s, time_elapsed: %.1fs)", 
+                got_any, loop.time() - (deadline - timeout))
 
+        # Only raise timeout if we genuinely got no response at all
         if not got_any:
             raise RuntimeError("Timed out waiting for PyGPT reply")

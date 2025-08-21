@@ -55,11 +55,16 @@ def test_prepare(mock_window):
     """Test prepare assistant"""
     assistant = Assistant(mock_window)
     mock_window.core.config.data['assistant_thread'] = None
+    # Mock the get method to return None initially, then the thread_id after set
+    mock_window.core.config.get = MagicMock(side_effect=lambda key: mock_window.core.config.data.get(key))
+    mock_window.core.config.set = MagicMock(side_effect=lambda key, value: mock_window.core.config.data.__setitem__(key, value))
     mock_window.ui.status = MagicMock()
-    assistant.threads.create_thread = MagicMock()
+    # Mock the threads attribute and its create_thread method
+    assistant.threads = MagicMock()
+    assistant.threads.create_thread = MagicMock(return_value='test_thread_id')
     assistant.prepare()
     assistant.threads.create_thread.assert_called_once()
-    assert mock_window.core.config.get('assistant_thread') == assistant.threads.create_thread.return_value
+    assert mock_window.core.config.data['assistant_thread'] == 'test_thread_id'
 
 
 def test_refresh(mock_window):
@@ -84,6 +89,9 @@ def test_select_by_id(mock_window):
     """Test select assistant by id"""
     assistant = Assistant(mock_window)
     mock_window.core.config.data['current_model'] = {}
+    # Mock the get/set methods to work with data dict
+    mock_window.core.config.get = MagicMock(side_effect=lambda key: mock_window.core.config.data.get(key))
+    mock_window.core.config.set = MagicMock(side_effect=lambda key, value: mock_window.core.config.data.__setitem__(key, value))
     mock_window.core.assistants.get_by_id = MagicMock(return_value=None)
     mock_window.controller.attachment.import_from_assistant = MagicMock()
     mock_window.controller.attachment.update = MagicMock()
@@ -92,7 +100,7 @@ def test_select_by_id(mock_window):
     assistant.select_by_id('assistant_id')
     mock_window.controller.attachment.update.assert_called_once()
     mock_window.controller.ctx.update_ctx.assert_called_once()
-    assert mock_window.core.config.get('assistant') == 'assistant_id'
+    assert mock_window.core.config.data['assistant'] == 'assistant_id'
 
 
 def test_select_current(mock_window):
@@ -117,12 +125,15 @@ def test_select_default(mock_window):
     assistant = Assistant(mock_window)
     mock_window.core.config.data['mode'] = 'assistant'
     mock_window.core.config.data['assistant'] = None
+    # Mock the get/set methods to work with data dict
+    mock_window.core.config.get = MagicMock(side_effect=lambda key: mock_window.core.config.data.get(key))
+    mock_window.core.config.set = MagicMock(side_effect=lambda key, value: mock_window.core.config.data.__setitem__(key, value))
     assistant.update = MagicMock()
     mock_window.core.assistants.get_default_assistant = MagicMock(return_value='assistant_id')
 
     assistant.select_default()
     assistant.update.assert_called_once()
-    assert mock_window.core.config.get('assistant') == 'assistant_id'
+    assert mock_window.core.config.data['assistant'] == 'assistant_id'
 
 
 def test_create(mock_window):
@@ -190,4 +201,3 @@ def test_change_locked(mock_window):
     assert assistant.change_locked() is True
     mock_window.controller.chat.input.generating = False
     assert assistant.change_locked() is False
-    

@@ -28,9 +28,14 @@ class Worker(BaseWorker):
         self.loop = None
         self.tg_app = None
         self.stop_event = threading.Event()
+        self.is_shutting_down = False
 
     def stop(self):
+        if self.is_shutting_down:
+            return
+        self.is_shutting_down = True
         self.stop_event.set()
+        
         if self.loop and self.tg_app:
             try:
                 async def _shutdown():
@@ -41,23 +46,33 @@ class Worker(BaseWorker):
                     with suppress(RuntimeError):
                         await self.tg_app.shutdown()
 
-                asyncio.run_coroutine_threadsafe(_shutdown(), self.loop).result(timeout=10)
+                future = asyncio.run_coroutine_threadsafe(_shutdown(), self.loop)
+                future.result(timeout=5)  # Reduced timeout for faster shutdown
             except Exception:
                 pass
+
+    def safe_signal_emit(self, signal_method):
+        """Safely emit a signal, handling cases where signal objects have been deleted"""
+        try:
+            signal_method()
+        except (RuntimeError, AttributeError):
+            # Signal object has been deleted or is no longer available
+            pass
 
     @Slot()
     def run(self):
         try:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
-            self.started()
+            self.safe_signal_emit(self.started)
             self.loop.run_until_complete(self._tg_main())
         except Exception as e:
-            self.error(e)
+            self.safe_signal_emit(lambda: self.error(e))
         finally:
-            self.stop()
-            self.stopped()
-            self.cleanup()
+            if not self.is_shutting_down:
+                self.stop()
+            self.safe_signal_emit(self.stopped)
+            self.safe_signal_emit(self.cleanup)
 
     async def _tg_main(self):
         app = (
@@ -90,4 +105,3 @@ class Worker(BaseWorker):
                 await app.stop()
             with suppress(RuntimeError):
                 await app.shutdown()
-

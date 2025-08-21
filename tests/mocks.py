@@ -25,8 +25,10 @@ def mock_window():
     window.stateChanged = MagicMock()
     window.idx_logger_message = MagicMock()
     window.core = MagicMock()
-    window.core.config = Config(window)  # real config object
+    window.core.config = MagicMock(spec=Config)  # mock config object
     window.core.config.initialized = True  # prevent initializing config
+    window.core.config.path = 'test_path'
+    window.core.config.data = {}  # add data dictionary
     window.core.config.init = MagicMock()  # mock init method to prevent init
     window.core.config.load = MagicMock()  # mock load method to prevent loading
     window.core.config.save = MagicMock()  # mock save method to prevent saving
