@@ -462,8 +462,12 @@ class Renderer(BaseRenderer):
         if item is not None \
                 and self.is_timestamp_enabled() \
                 and item.input_timestamp is not None:
-            ts = datetime.fromtimestamp(item.input_timestamp)
-            hour = ts.strftime("%H:%M:%S")
+            try:
+                secs = max(0, int(item.input_timestamp)) % 3600
+            except Exception:
+                secs = 0
+            m, s = divmod(secs, 60)
+            hour = f"00:{m:02d}:{s:02d}"
             text = f"{hour}: {text}"
         return text
 

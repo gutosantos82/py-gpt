@@ -63,9 +63,8 @@ class Profile:
 
     def from_defaults(self):
         """Create default profile config"""
-        is_test = os.environ.get('ENV_TEST') == '1'
-        if is_test:
-            return # DISABLE in tests!!!
+        # Always create a default profile; tests use a dedicated project-local workdir,
+        # so it is safe to generate the file during test runs.
 
         uuid = str(uuid4())
         path = self.base_workdir.replace("%HOME%", str(Path.home()))

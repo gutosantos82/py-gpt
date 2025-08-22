@@ -20,7 +20,8 @@ from tests.mocks import mock_window
 from pygpt_net.controller import Debug
 
 
-def test_update(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_update(mock_qobject_init, mock_window):
     """Test update"""
     debug = Debug(mock_window)
     debug.update_menu = MagicMock()
@@ -29,7 +30,8 @@ def test_update(mock_window):
     debug.update_menu.assert_called_once()
 
 
-def test_update_menu(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_update_menu(mock_qobject_init, mock_window):
     """Test update menu"""
     debug = Debug(mock_window)
     debug.is_logger = True
@@ -43,7 +45,8 @@ def test_update_menu(mock_window):
     mock_window.ui.menu['debug.logger'].setChecked.assert_called()
 
 
-def test_on_update(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_on_update(mock_qobject_init, mock_window):
     """Test on update"""
     debug = Debug(mock_window)
     debug.update_worker = MagicMock()
@@ -55,7 +58,8 @@ def test_on_update(mock_window):
     mock_window.controller.dialogs.debug.update_worker.assert_called()
 
 
-def test_open_logger(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_open_logger(mock_qobject_init, mock_window):
     """Test open logger"""
     debug = Debug(mock_window)
     mock_window.ui.dialogs.open = MagicMock()
@@ -67,7 +71,8 @@ def test_open_logger(mock_window):
     assert debug.is_logger is True
 
 
-def test_close_logger(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_close_logger(mock_qobject_init, mock_window):
     """Test close logger"""
     debug = Debug(mock_window)
     mock_window.ui.dialogs.close = MagicMock()
@@ -78,7 +83,8 @@ def test_close_logger(mock_window):
     assert debug.is_logger is False
 
 
-def test_toggle_logger(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_toggle_logger(mock_qobject_init, mock_window):
     """Test toggle logger"""
     debug = Debug(mock_window)
     debug.open_logger = MagicMock()
@@ -95,7 +101,8 @@ def test_toggle_logger(mock_window):
     debug.close_logger.assert_called_once()
 
 
-def test_clear_logger(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_clear_logger(mock_qobject_init, mock_window):
     """Test clear logger"""
     debug = Debug(mock_window)
     mock_window.logger = MagicMock()
@@ -106,7 +113,8 @@ def test_clear_logger(mock_window):
     mock_window.logger.clear.assert_called_once()
 
 
-def test_toggle(mock_window):
+@patch('pygpt_net.controller.debug.debug.QObject.__init__')
+def test_toggle(mock_qobject_init, mock_window):
     """Test toggle"""
     debug = Debug(mock_window)
     debug.window.controller.dialogs.debug.show = MagicMock()

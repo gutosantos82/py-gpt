@@ -110,17 +110,27 @@ class Config:
 
         :return: base workdir path
         """
-        path = os.path.join(Path.home(), '.config', Config.CONFIG_DIR)
+        # 1) Explicit override via env takes precedence
         if "PYGPT_WORKDIR" in os.environ and os.environ["PYGPT_WORKDIR"] != "":
             print(f"FORCE using workdir: {os.environ['PYGPT_WORKDIR']}")
             if not os.path.isabs(os.environ["PYGPT_WORKDIR"]):
                 path = os.path.join(os.getcwd(), os.environ["PYGPT_WORKDIR"])
             else:
-                path = os.environ["PYGPT_WORKDIR"]
+                path = workdir
             if not os.path.exists(path):
                 print(f"Workdir path not exists: {path}")
                 print(f"Creating workdir path: {path}")
                 os.makedirs(path, exist_ok=True)
+            return path
+
+        # 2) Test environment: use project-local workdir to avoid touching user home
+        if os.environ.get('ENV_TEST') == '1':
+            path = os.path.join(os.getcwd(), '.pytest-workdir', Config.CONFIG_DIR)
+            os.makedirs(path, exist_ok=True)
+            return path
+
+        # 3) Default location in user's config dir
+        path = os.path.join(Path.home(), '.config', Config.CONFIG_DIR)
         return path
 
     @staticmethod
