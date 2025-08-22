@@ -83,6 +83,7 @@ from pygpt_net.plugin.google import Plugin as GooglePlugin
 from pygpt_net.plugin.twitter import Plugin as TwitterPlugin
 from pygpt_net.plugin.facebook import Plugin as FacebookPlugin
 from pygpt_net.plugin.telegram import Plugin as TelegramPlugin
+from pygpt_net.plugin.telegram_gateway import Plugin as TelegramGatewayPlugin
 from pygpt_net.plugin.slack import Plugin as SlackPlugin
 from pygpt_net.plugin.github import Plugin as GithubPlugin
 from pygpt_net.plugin.bitbucket import Plugin as BitbucketPlugin
@@ -402,6 +403,7 @@ def run(**kwargs):
     launcher.add_plugin(TwitterPlugin())
     launcher.add_plugin(FacebookPlugin())
     launcher.add_plugin(TelegramPlugin())
+    launcher.add_plugin(TelegramGatewayPlugin())
     launcher.add_plugin(SlackPlugin())
     launcher.add_plugin(GithubPlugin())
     launcher.add_plugin(BitbucketPlugin())
