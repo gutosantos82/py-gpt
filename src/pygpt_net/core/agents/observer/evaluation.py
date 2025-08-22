@@ -139,9 +139,8 @@ class Evaluation:
         for ctx in history:
             if self.is_input(ctx):  # ensure ctx is input
                 if not use_prev and "agent_evaluate" in ctx.extra:  # exclude evaluation inputs
-                        continue
-                if ctx.input:
-                    last_input = ctx.input
+                    continue
+                last_input = ctx.input
         return last_input
 
     def is_input(self, ctx: CtxItem) -> bool:
@@ -151,7 +150,7 @@ class Evaluation:
         :param ctx: context item
         :return: True if input, False otherwise
         """
-        return ctx.extra is not None and "agent_input" in ctx.extra
+        return ctx.extra is not None and "agent_input" in ctx.extra and ctx.input
 
     def is_output(self, ctx: CtxItem) -> bool:
         """
@@ -174,9 +173,8 @@ class Evaluation:
         task = ""
         for ctx in history:
             if self.is_input(ctx):
-                if ctx.input:
-                    task = ctx.input
-                    break
+                task = ctx.input
+                break
         return task
 
     def get_final_response(self, history: List[CtxItem]) -> str:
@@ -187,14 +185,16 @@ class Evaluation:
         :return: final response from agent
         """
         outputs = []
+        i = 0
         for ctx in history:
-            # if next input then clear outputs - use only output after last user input
-            if self.is_input(ctx):
+            # if next input (but not last) then clear outputs - use only output after last user input
+            if self.is_input(ctx) and i < len(history) - 1:
                 outputs.clear()
 
             if self.is_output(ctx):
                 if ctx.output:
                     outputs.append(ctx.output)
+            i += 1
 
         return "\n\n".join(outputs) if outputs else ""
 

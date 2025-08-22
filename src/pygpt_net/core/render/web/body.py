@@ -262,7 +262,22 @@ class Body:
                         element.classList.remove('empty_list');
                         element.insertAdjacentHTML('beforeend', content);
                         highlightCode(true, element);
-                        scheduleScroll();
+                        scrollToBottom(false);  // without schedule
+                    }
+                }
+                function replaceNodes(content) {
+                    if (DEBUG_MODE) {
+                        log("REPLACE NODES: {" + content + "}");
+                    }
+                    clearStreamBefore();
+                    prevScroll = 0;
+                    const element = els.nodes || document.getElementById('_nodes_');
+                    if (element) {
+                        element.classList.remove('empty_list');
+                        element.replaceChildren();
+                        element.insertAdjacentHTML('beforeend', content);
+                        highlightCode(true, element);
+                        scrollToBottom(false);  // without schedule
                     }
                 }
                 function clean() {
@@ -275,6 +290,7 @@ class Body:
                     }
                     resetEphemeralDomRefs();
                     els = {};
+                    /*
                     try {
                         if (window.gc) {
                             window.gc();
@@ -282,6 +298,7 @@ class Body:
                     } catch (e) {
                         // gc not available
                     }
+                    */
                 }
                 function appendExtra(id, content) {
                     hideTips();

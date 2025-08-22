@@ -103,7 +103,6 @@ class Response:
             extra["error"] = e
             self.failed(context, extra)
 
-
         if stream: 
             if mode not in self.window.controller.chat.output.not_stream_modes:
                 return # handled in stream:handleEnd()
@@ -205,7 +204,6 @@ class Response:
         # if next in agent cycle
         if ctx.partial:
             self.window.dispatch(AppEvent(AppEvent.CTX_END))  # app event
-            self.window.dispatch(RenderEvent(RenderEvent.RELOAD))  # reload chat window
 
         # handle current step
         ctx.current = False  # reset current state
@@ -214,33 +212,33 @@ class Response:
         internal = ctx.internal
 
         self.window.core.ctx.set_last_item(ctx)
-        data = {
+        event = RenderEvent(RenderEvent.BEGIN, {
             "meta": ctx.meta,
             "ctx": ctx,
             "stream": stream,
-        }
-        event = RenderEvent(RenderEvent.BEGIN, data)
+        })
         self.window.dispatch(event)
 
         # append step input to chat window
-        data = {
+        event = RenderEvent(RenderEvent.INPUT_APPEND, {
             "meta": ctx.meta,
             "ctx": ctx,
-        }
-        event = RenderEvent(RenderEvent.INPUT_APPEND, data)
+        })
         self.window.dispatch(event)
+
+        # CTX OUTPUT INFO:
+        # - ctx.output may be empty here if stream in OpenAI agents
+        # - ctx.live_output may be used against output in LlamaIndex agents
         if ctx.id is None:
             self.window.core.ctx.add(ctx)
-        self.window.controller.ctx.update(
-            reload=True,
-            all=False,
-        )
-        self.window.core.ctx.update_item(ctx)
+        else:
+            self.window.core.ctx.update_item(ctx)
 
         # update ctx meta
         if mode in (MODE_AGENT_LLAMA, MODE_AGENT_OPENAI) and ctx.meta is not None:
-            self.window.core.ctx.replace(ctx.meta)
+            self.window.core.ctx.replace(ctx.meta)  # update meta in items
             self.window.core.ctx.save(ctx.meta.id)
+
             # update preset if exists
             preset = self.window.controller.presets.get_current()
             if preset is not None:
@@ -257,31 +255,22 @@ class Response:
 
         # post-handle, execute cmd, etc.
         self.window.controller.chat.output.post_handle(ctx, mode, stream, reply, internal)
-
-        data = {
-            "meta": ctx.meta,
-        }
-        event = RenderEvent(RenderEvent.TOOL_BEGIN, data)
-        self.window.dispatch(event)  # show cmd waiting
         self.window.controller.chat.output.handle_end(ctx, mode)  # handle end.
 
-        data = {
-            "meta": ctx.meta,
-            "ctx": ctx,
-            "stream": self.window.core.config.get("stream", False),
-        }
-        event = RenderEvent(RenderEvent.END, data)
+        event = RenderEvent(RenderEvent.RELOAD)
         self.window.dispatch(event)
 
         # if continue reasoning
         if global_mode not in (MODE_AGENT_LLAMA, MODE_AGENT_OPENAI):
             return  # no agent mode, nothing to do
 
-        if ctx.extra is None or (type(ctx.extra) == dict and "agent_finish" not in ctx.extra):
+        # not agent final response
+        if ctx.extra is None or (isinstance(ctx.extra, dict) and "agent_finish" not in ctx.extra):
             self.window.update_status(trans("status.agent.reasoning"))
             self.window.controller.chat.common.lock_input()  # lock input, re-enable stop button
 
-        if ctx.extra is not None and (type(ctx.extra) == dict and "agent_finish" in ctx.extra):
+        # agent final response
+        if ctx.extra is not None and (isinstance(ctx.extra, dict) and "agent_finish" in ctx.extra):
             self.window.controller.agent.llama.on_finish(ctx)  # evaluate response and continue if needed
 
     def end(
