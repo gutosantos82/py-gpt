@@ -238,8 +238,8 @@ class Plugin(BasePlugin):
         """Dispatch PyGPT event on the main thread safely."""
         try:
             self.dispatch_event.emit(event)
-        except Exception:
-            pass
+        except Exception as e:
+            log.info("[TelegramGateway] Failed to dispatch event: {}".format(e))
 
     def _text_send_on_main(self, text: str, internal: bool = True):
         """Emit text send signal to main thread."""
@@ -706,8 +706,8 @@ class Plugin(BasePlugin):
         # Best-effort: notify plugins that user sent text
         try:
             self._dispatch_on_main(Event(Event.USER_SEND, {'value': user_text}))
-        except Exception:
-            pass
+        except Exception as e:
+            log.info(f"[TelegramGateway] Failed to dispatch USER_SEND event {e}")
 
         # Initiate the chat turn via the Text controller
         self._text_send_on_main(user_text, internal=True)
@@ -715,107 +715,164 @@ class Plugin(BasePlugin):
         loop = asyncio.get_running_loop()
         
         # Use configurable timeout values  
-        timeout = max(30, int(self.get_option_value("response_timeout") or 60))  # Min 30 seconds
-        idle_window = max(1.0, float(self.get_option_value("idle_window") or 3.0))  # Min 1 second, default 3
+        timeout = max(60, int(self.get_option_value("response_timeout") or 60))  # Default 60 seconds
+        idle_window = max(2.0, float(self.get_option_value("idle_window") or 2.0))  # Default 2 seconds
         
         deadline = loop.time() + timeout
         kernel = self.window.controller.kernel
+        start_time = loop.time()
 
         last_seen = loop.time()
         got_any = False
-        curr_ctx = self.window.core.ctx.get_last_item()
-        prev_output = getattr(curr_ctx, "output", None) if curr_ctx else None
-        prev_results_len = len(getattr(curr_ctx, "results", []) or []) if curr_ctx else 0
-        prev_images_len = len(getattr(curr_ctx, "images", []) or []) if curr_ctx else 0
+        
+        # Get initial context state
+        initial_ctx = self.window.core.ctx.get_last_item()
+        initial_ctx_id = getattr(initial_ctx, "id", None) if initial_ctx else None
+        log.info(f"[TelegramGateway] Starting with context ID: {initial_ctx_id}")
+        
+        # Track what we've already seen
+        seen_outputs = set()
+        seen_results_count = 0
+        seen_images_count = 0
+        
+        # Initialize tracking variables
+        if initial_ctx:
+            if hasattr(initial_ctx, "output") and initial_ctx.output:
+                seen_outputs.add(str(initial_ctx.output))
+            if hasattr(initial_ctx, "results"):
+                seen_results_count = len(initial_ctx.results or [])
+            if hasattr(initial_ctx, "images"):
+                seen_images_count = len(initial_ctx.images or [])
+
+        consecutive_no_change = 0
+        max_no_change_cycles = 8  # About 2 seconds at 0.25s intervals
 
         while loop.time() < deadline:
-            # Check for context changes (this is the critical detection logic)
-            last_ctx = self.window.core.ctx.get_last_item()
-            
-            # Context switching detection - check if we have a new context 
-            if (
-                last_ctx is not None
-                and last_ctx is not curr_ctx
-                and (
-                    getattr(last_ctx, "sub_reply", False)
-                    or getattr(last_ctx, "agent_output", False)
-                    or (
-                        isinstance(getattr(last_ctx, "extra", None), dict)
-                        and (
-                            last_ctx.extra.get("sub_reply")
-                            or last_ctx.extra.get("agent_output")
-                        )
+            try:
+                # Get current context
+                curr_ctx = self.window.core.ctx.get_last_item()
+                curr_ctx_id = getattr(curr_ctx, "id", None) if curr_ctx else None
+                
+                if not curr_ctx:
+                    log.debug("[TelegramGateway] No current context available")
+                    await asyncio.sleep(0.25)
+                    continue
+
+                # Log context changes for debugging
+                if curr_ctx_id != initial_ctx_id:
+                    log.info(f"[TelegramGateway] Context changed from {initial_ctx_id} to {curr_ctx_id}")
+                    # Reset tracking for new context
+                    seen_outputs.clear()
+                    seen_results_count = 0
+                    seen_images_count = 0
+                    initial_ctx_id = curr_ctx_id
+
+                new_texts: list[str] = []
+                new_images: list[str] = []
+                found_new_content = False
+
+                # Check for new output
+                curr_output = getattr(curr_ctx, "output", None)
+                if curr_output and str(curr_output).strip():
+                    output_str = str(curr_output).strip()
+                    if output_str not in seen_outputs:
+                        log.info(f"[TelegramGateway] Found new output: '{output_str[:100]}{'...' if len(output_str) > 100 else ''}'")
+                        seen_outputs.add(output_str)
+                        new_texts.append(output_str)
+                        found_new_content = True
+
+                # Check for new results
+                curr_results = getattr(curr_ctx, "results", []) or []
+                if len(curr_results) > seen_results_count:
+                    new_result_items = curr_results[seen_results_count:]
+                    log.info(f"[TelegramGateway] Found {len(new_result_items)} new results")
+                    for item in new_result_items:
+                        if isinstance(item, dict):
+                            value = item.get("result")
+                            if value is not None:
+                                new_texts.append(str(value))
+                            else:
+                                new_texts.append(str(item))
+                        else:
+                            new_texts.append(str(item))
+                    seen_results_count = len(curr_results)
+                    found_new_content = True
+
+                # Check for new images
+                curr_images = getattr(curr_ctx, "images", []) or []
+                if len(curr_images) > seen_images_count:
+                    new_image_items = curr_images[seen_images_count:]
+                    log.info(f"[TelegramGateway] Found {len(new_image_items)} new images")
+                    new_images.extend(new_image_items)
+                    seen_images_count = len(curr_images)
+                    found_new_content = True
+
+                # Yield new content if found
+                if new_texts or new_images:
+                    log.info(
+                        "[TelegramGateway] Yielding %d texts and %d images",
+                        len(new_texts),
+                        len(new_images),
                     )
-                )
-            ):
-                curr_ctx = last_ctx
-                prev_output = None
-                prev_results_len = 0
-                prev_images_len = 0
+                    last_seen = loop.time()
+                    got_any = True
+                    consecutive_no_change = 0
+                    yield new_texts, new_images
+                elif found_new_content:
+                    # Reset no-change counter even if we didn't yield (empty content)
+                    consecutive_no_change = 0
+                    last_seen = loop.time()
+                else:
+                    consecutive_no_change += 1
 
-            # Get current state - this must work with the original PyGPT context structure
-            curr_output = getattr(curr_ctx, "output", None) if curr_ctx else None
-            curr_results = getattr(curr_ctx, "results", []) or [] if curr_ctx else []
-            curr_images = getattr(curr_ctx, "images", []) or [] if curr_ctx else []
-            curr_extra = getattr(curr_ctx, "extra", {}) or {} if curr_ctx else {}
-            
-            agent_finish = (
-                isinstance(curr_extra, dict) and curr_extra.get("agent_finish")
-            )
+                # Check various exit conditions
+                curr_extra = getattr(curr_ctx, "extra", {}) or {}
+                agent_finish = isinstance(curr_extra, dict) and curr_extra.get("agent_finish")
+                
+                # Check if context indicates completion
+                is_stopped = getattr(curr_ctx, "stopped", False)
+                is_current = getattr(curr_ctx, "current", True)
+                
+                # Log kernel state for debugging
+                kernel_state = getattr(kernel, "state", None)
+                log.debug(f"[TelegramGateway] Kernel state: {kernel_state}, stopped: {is_stopped}, current: {is_current}")
 
-            new_texts: list[str] = []
-            new_images: list[str] = []
+                # Exit conditions (only after we got some content)
+                if got_any:
+                    # Agent explicitly finished
+                    if agent_finish:
+                        log.info("[TelegramGateway] Agent signaled finish; exiting")
+                        break
+                    
+                    # Context marked as stopped
+                    if is_stopped:
+                        log.info("[TelegramGateway] Context marked as stopped; exiting")
+                        break
+                    
+                    # Kernel is not busy and we've been idle
+                    if (hasattr(kernel, "STATE_BUSY") and 
+                        kernel_state != kernel.STATE_BUSY and 
+                        (loop.time() - last_seen) > idle_window):
+                        log.info("[TelegramGateway] Kernel not busy and idle window expired; finishing")
+                        break
+                    
+                    # Too many cycles without any content changes
+                    if consecutive_no_change >= max_no_change_cycles:
+                        log.info(f"[TelegramGateway] No changes for {consecutive_no_change} cycles; assuming complete")
+                        break
 
-            # Detect new output text
-            if curr_output != prev_output and curr_output is not None:
-                new_texts.append(str(curr_output))
-                prev_output = curr_output
+                await asyncio.sleep(0.25)
 
-            # Detect new results
-            if len(curr_results) > prev_results_len:
-                for item in curr_results[prev_results_len:]:
-                    if isinstance(item, dict):
-                        value = item.get("result")
-                        new_texts.append(str(value) if value is not None else str(item))
-                    else:
-                        new_texts.append(str(item))
-                prev_results_len = len(curr_results)
+            except Exception as e:
+                log.exception(f"[TelegramGateway] Error in polling loop: {e}")
+                await asyncio.sleep(0.25)
+                continue
 
-            # Detect new images
-            if len(curr_images) > prev_images_len:
-                new_images = list(curr_images[prev_images_len:])
-                prev_images_len = len(curr_images)
-
-            # If we found new content, yield it and update state
-            if new_texts or new_images:
-                log.info(
-                    "[TelegramGateway] Yielding %s new texts and %s new images",
-                    len(new_texts),
-                    len(new_images),
-                )
-                last_seen = loop.time()
-                got_any = True
-                yield new_texts, new_images
-
-            # Check if we should exit (only after we have some content)
-            if got_any and kernel.state != kernel.STATE_BUSY and (loop.time() - last_seen) > idle_window:
-                log.info("[TelegramGateway] Kernel not busy and idle; finishing")
-                break
-
-            if agent_finish:
-                log.info("[TelegramGateway] Agent signaled finish; exiting")
-                break
-
-            # Also check for extended idle time as fallback
-            if got_any and (loop.time() - last_seen) > idle_window:
-                log.info("[TelegramGateway] Idle window expired; finishing") 
-                break
-
-            await asyncio.sleep(0.25)
-
+        elapsed_time = loop.time() - start_time
         log.info("[TelegramGateway] _ask_pygpt done (got_any: %s, time_elapsed: %.1fs)", 
-                got_any, loop.time() - (deadline - timeout))
+                got_any, elapsed_time)
 
         # Only raise timeout if we genuinely got no response at all
         if not got_any:
-            raise RuntimeError("Timed out waiting for PyGPT reply")
+            log.error("[TelegramGateway] Timeout: No response received from PyGPT")
+            raise RuntimeError(f"Timed out waiting for PyGPT reply after {elapsed_time:.1f}s")
